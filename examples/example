@@ -6,6 +6,11 @@ prediction1.pdb
 Y
 ```
 
+EXAPMPLE OUTPUT 1:
+
+```
+[['R1190TS035_1o.pdb', '0.091']]
+```
 
 EXAMPLE INPUT 2:
 
@@ -16,3 +21,7 @@ Y
 ```
 
 EXAMPLE OUTPUT 2:
+
+```
+[['predictions\\R1189TS125_5o.pdb', '0.000'], ['predictions\\R1189TS131_4o.pdb', '0.100'], ['predictions\\R1189TS131_5o.pdb', '0.126'], ['predictions\\R1189TS147_2o.pdb', '0.028']]
+```
