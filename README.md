@@ -19,6 +19,14 @@ Giving a directory instead of a single prediciton will result in the tool compar
 
 NOTE: Depending on your environment, the job may be stopped upon running hbplus. It will finish correctly when resumed.
 
+In case of mismatched line numbering, the user will be asked whether to auto-renumber. If not, then the user will be aksed to input custom alignement.
+
+Alignement format example (protein chain A):
+
+```
+A:1-54>A:1-54,A:56-56>A:55-55
+```
+
 ## Dependancies:
  * rna-tools ([rna-tools.readthedocs.io](https://rna-tools.readthedocs.io/en/latest/))
  * hbplus (https://www.ebi.ac.uk/thornton-srv/software/HBPLUS)
