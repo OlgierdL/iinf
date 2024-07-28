@@ -1,0 +1,18 @@
+EXAMPLE INPUT 1:
+
+```
+target1.pdb
+prediction1.pdb
+Y
+```
+
+
+EXAMPLE INPUT 2:
+
+```
+target2.pdb
+predicions
+Y
+```
+
+EXAMPLE OUTPUT 2:
