@@ -13,7 +13,7 @@ Then input:
 
 ```prediction.pdb``` (or ```directory of .pdb files```)
 
-And ```Y/N``` to decide whether the INF is to adjusted for mismatched residue numbers. The default answer is yes.
+And ```Y/N``` to decide whether the INF is to adjusted for mismatched residue numbers. The default answer is no.
 
 Giving a directory instead of a single prediciton will result in the tool comparing all .pdb files of the directory to the given targed file.
 
