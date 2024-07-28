@@ -17,4 +17,5 @@ NOTE: Depending on your environment, the job may be stopped upon running hbplus.
 ## Dependancies:
  * rna-tools ([rna-tools.readthedocs.io](https://rna-tools.readthedocs.io/en/latest/))
  * hbplus (https://www.ebi.ac.uk/thornton-srv/software/HBPLUS)
+ * 
 Both tools should be added to PATH or otherwise accesible.
