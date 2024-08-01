@@ -1,8 +1,31 @@
 # A tool to asses precision of molecular predictions
 
-This is a tool for assesing the correctness of in-silico models of molecular structures containing an RNA molecule and a number of protein chains by INF value. It is based on RNA Tools and HBPlus.
+## Features:
 
-The script is viable to be run in an IDE or directly executed.
+This is a tool for assesing the correctness of in-silico models of molecular structures containing an RNA molecule and a number of protein chains by INF value. It is based on RNA Tools and HBPlus.
+To do that, it executes the following steps:
+ * Prepare the model file for usage,
+ * Analyze both target and model files, rename and renumber chains if necessary (using rna-tools),
+ * Run HBPlus on both files to find hydrogen bonds,
+ * Compare the found molecule pairs in target and model to asses similarity by calculating the INF value.
+
+## Installation:
+The script ```casp_compare.py``` is viable to be run in an IDE or directly executed.
+
+Beforehand, it requires installing rna-tools and HBPlus.
+ RNA Tools:
+ RNA tools can be installed using the following installation guide:
+ https://rna-tools.readthedocs.io/en/latest/install.html
+ It may be needed to add path to rna-tools to the PATH in Linux (export PATH="$PATH:<path_to_rna_tools_scripts>")
+
+ HBPlus:
+ HBplus can be installed from the website:
+ https://www.ebi.ac.uk/thornton-srv/software/HBPLUS
+ where installation instructions are provided. 
+ Then, add HBPlus to PATH (export PATH="$PATH:<path_to_hbplus>")
+
+## Usage:
+
 To run:
 
 ```python3 casp.py```
@@ -26,6 +49,8 @@ Alignement format example (protein chain A):
 ```
 A:1-54>A:1-54,A:56-56>A:55-55
 ```
+## Example Usage:
+Example usage is provided in the /examples folder.
 
 ## Dependancies:
  * rna-tools ([rna-tools.readthedocs.io](https://rna-tools.readthedocs.io/en/latest/))
