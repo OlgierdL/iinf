@@ -20,6 +20,17 @@ $$
 \text{inf} = \sqrt{\frac{tp}{tp + fp} \cdot \frac{tp}{tp + fn}}
 $$
 
+Where:
+
+$$\text{tp}$$
+is the number of pairs (bonds) that are found both in the target and the prediction files
+
+$$\text{fn}$$
+is the number of pairs (bonds) that are found both in the target but not in the prediction file
+
+$$\text{fp}$$
+is the number of pairs (bonds) that are found both in the prediction but not in the target file
+
 ## Installation:
 The script ```casp_compare.py``` is viable to be run in an IDE or directly executed.
 
