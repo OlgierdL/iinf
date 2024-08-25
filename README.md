@@ -32,7 +32,7 @@ Using Conda:
 
 ```pip install -r requirements.txt```
 
-To set environment variables, the ```set-exports.sh``` script can be used. Make sure to change the ```TODO``` to your installation paths and run using:
+To set environment variables, the ```set-exports.sh``` script can be used. Make sure to change the ```TODO``` to your HBPlus and rna-tools installation paths. Run using:
 
 ```source ./set-exports.sh```
 
