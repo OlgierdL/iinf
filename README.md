@@ -24,6 +24,14 @@ Beforehand, it requires installing rna-tools and HBPlus.
  where installation instructions are provided. 
  Then, add HBPlus to PATH (export PATH="$PATH:<path_to_hbplus>")
 
+Using Conda:
+
+```conda create -n iinf-env python=3.12```
+
+```conda activate iinf-env```
+
+```pip install -r requirements.txt```
+
 ## Usage:
 
 To run:
