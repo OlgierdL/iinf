@@ -9,6 +9,17 @@ To do that, it executes the following steps:
  * Run HBPlus on both files to find hydrogen bonds,
  * Compare the found molecule pairs in target and model to asses similarity by calculating the INF value.
 
+## Output:
+
+The tool allows users to compute the INF value between two .pdb files.
+
+The INF value is the measure of similarity between two molecules.
+This is given by the formula:
+
+$$
+\text{inf} = \sqrt{\frac{tp}{tp + fp} \cdot \frac{tp}{tp + fn}}
+$$
+
 ## Installation:
 The script ```casp_compare.py``` is viable to be run in an IDE or directly executed.
 
