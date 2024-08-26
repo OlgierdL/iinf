@@ -69,10 +69,15 @@ The prediction.pdb can be replaced by a directory containing multiple .pdb files
 Parameters:
 
 ```-a, --adjust_inf``` - adjust the INF value, if the amount of residues differs between target and prediction, the result is multiplied by residues_no_predicition/residues_no_target
+
 ```-r, --renumber_structures``` - renumber chains, so that residue numbering is consistant for comparison.
+
 ```-c, --custom_alignement``` - use custom alignement format for renumbering. Example below.
 
+
+
 ```--target_renum``` - custom target alignement.
+
 ```--model_renum``` -custom model alignement
 
 Alignement format example (protein chain A):
