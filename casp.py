@@ -11,6 +11,9 @@ import shutil
 import sys
 import argparse
 from itertools import permutations
+import tempfile
+from pathlib import Path
+import csv
 
 def clear(file):
     output_file = file[0:len(file)-4] + "m" + file[len(file)-4:]
@@ -153,15 +156,13 @@ def get_mapping(targetData, modelData, target, model):
     return chains_mapping_target
 
 
-def run_hbplus(name1, name2, target_done):
-    commandT = f'bash -i -c "find . -name \'{name1}\' -exec hbplus {{}} \\;"'
-    commandM = f'bash -i -c "find . -name \'{name2}\' -exec hbplus {{}} \\;"'
-    if(not target_done): subprocess.run(commandT, shell=True)
-    subprocess.run(commandM, shell=True)
-
-
-def trim(s):
-    return s.strip()
+def run_hbplus(tmpdir, name1):
+    command = f'bash -i -c "find {tmpdir} -name \'*.pdb\' -exec hbplus \\{{\\}} \\;"'
+    subprocess.run(command, shell=True, cwd=tmpdir)
+    name3 = name1[0:len(name1) - 3] + "hb2"
+    target_HB2 = open(name3, "r")
+    hb2_dict = {f.name: 0.0 for f in Path(tmpdir).glob("*.hb2") if f.stem != Path(name3).stem}
+    return hb2_dict, target_HB2
 
 
 def getid(don):
@@ -197,16 +198,16 @@ def filter_pairs(file, rna_chains):
             donor = line[:9]
             acceptor = line[14:23]
 
-            chain_d = trim(donor[0])
+            chain_d = donor[0].strip()
             if (chain_d == "-"):
                 chain_d = "A"
 
-            chain_a = trim(acceptor[0])
+            chain_a = acceptor[0].strip()
             if (chain_a == "-"):
                 chain_a = "A"
 
-            name_d = trim(donor[6:9])
-            name_a = trim(acceptor[6:9])
+            name_d = donor[6:9].strip()
+            name_a = acceptor[6:9].strip()
 
             if (name_d[0] != "HOH" and name_a != "HOH") and\
             (len(rna_chains) == 0 or (len(rna_chains) > 0 and (rna_chains.find(chain_d) >= 0 or rna_chains.find(chain_a) >= 0))) and\
@@ -308,6 +309,7 @@ def convert_to_wsl_path(path):
 
 def rna_tools_renumerate(filename, output_file, edit_command):
     command = f'rna_pdb_tools.py --edit \'{edit_command}\' {filename} > {output_file}'
+    print(command)
     subprocess.run(["bash", "-i", "-c", command])
 
 
@@ -395,264 +397,239 @@ def copy_file_to_script_directory(source_path):
     return True
 
 
-def compare (name1, names2, rmsd, clear_target, raw_inf):
-    files_model = []
-    files_target = []
+def save_csv(result_file_path,data):
+    with open(result_file_path, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+
+
+def copy_to_tmp(tmpdir, names):
+    names_copied = []
+    for name in names:
+        name_copied = shutil.copy(name, tmpdir)
+        names_copied.append(os.path.basename(name_copied))
+    return names_copied
+
+
+def single_chain_rename(name2, modelData, model):
+    output_file = name2[0:len(name2) - 4] + "_id" + name2[len(name2) - 4:]
+    add_protein_chain_identifier(name2, output_file, modelData["RNA"])
+    model.close()
+    os.remove(name2)
+    new_name = name2[0:len(name2)-4] + "_id" + name2[len(name2)-4:]
+    return new_name
+
+
+def alpha_rename(name2, modelData, model):
+    id = find_next_identifier(modelData["Protein"])
+    rep = modelData["RNA"] + ">" + id
+    output = name2[0:len(name2) - 4] + "_t" + name2[len(name2) - 4:]
+    command = f'rna_pdb_tools.py --rename-chain \'{rep}\' {name2} > {output}'
+    subprocess.run(["bash", "-i", "-c", command])
+    model.close()
+    os.remove(name2)
+    return output
+
+
+def back_rename(modelData, name2, model):
+    rep = modelData["RNA"] + ">" + "0"
+    output = name2[0:len(name2) - 4] + "_t" + name2[len(name2) - 4:]
+    command = f'rna_pdb_tools.py --rename-chain \'{rep}\' {name2} > {output}'
+    subprocess.run(["bash", "-i", "-c", command])
+    model.close()
+    os.remove(name2)
+    return output
+
+
+def custom_renum(data, done, name, file, renum):
+    renumber = False
+    if ((data[data["RNA"]][2] - data[data["RNA"]][1] + 1 != data[data["RNA"]][3]) or data[data["RNA"]][1] != 1 and not done):
+        renumber = True
+
+    for id in data["Protein"].split(","):
+        if (data[id][2] - data[id][1] + 1 != data[id][3] or data[id][1] != 1 and not done):
+            renumber = True
+
+    if (renumber):
+        rna_tools_renumerate(name, name[0:len(name) - 4] + "_cus" + name[len(name) - 4:], renum)
+        file.close()
+        os.remove(name)
+        new_name = name[0:len(name) - 4] + "_cus" + name[len(name) - 4:]
+        new_file = open(new_name, "r")
+        print("renumbered")
+        return new_file, new_name
+    return file, name
+
+
+def auto_renum(data, done, name, file):
+    to_renum = []
+    renumber = False
+
+    for id in data["Protein"].split(","):
+        if (data[id][2] - data[id][1] + 1 != data[id][3] or data[id][1] != 1 and not done):
+            renumber = True
+            to_renum.append(data[id][0])
+
+    if ((data[data["RNA"]][2] - data[data["RNA"]][1] + 1 != data[data["RNA"]][3]) or data[data["RNA"]][1] != 1 and not done):
+        renumber = True
+        to_renum.append(data[data["RNA"]][0])
+
+    if (renumber):
+        auto_renumber(name, to_renum, name[0:len(name) - 4] + "_ren" + name[len(name) - 4:])
+        file.close()
+        os.remove(name)
+        new_name = name[0:len(name) - 4] + "_ren" + name[len(name) - 4:]
+        new_file = open(new_name, "r")
+        print("renumbered")
+        return new_file, new_name
+    return file, name
+
+
+def get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2):
+    max_inf = 0
+    max_mapping = ""
+    model_pairs_max = []
+    target_pairs_max = []
+    for mapping in target_mappings:
+        target_pairs = get_pairs(target_HB2, "A", mapping.split(","))
+        model_pairs = get_pairs(model_HB2, "0", chains_mapping_model.split(","))
+        if (len(model_pairs) == 0):
+            pass
+        elif (len(target_pairs) == 0):
+            pass
+        else:
+            inf = get_inf(target_pairs, model_pairs)
+            print(inf)
+            if (inf > max_inf):
+                max_inf = inf
+                max_mapping = mapping
+                model_pairs_max = model_pairs
+                target_pairs_max = target_pairs
+    return max_inf
+
+
+def compare (name1, names2, custom_alignement, raw_inf, renumber, target_renum, model_renum):
     infs = []
     target_done = False
 
-    for name in names2:
-        name2 = name
-        if(not target_done): name1_copied = copy_file_to_script_directory(name1)
-        name2_copied = copy_file_to_script_directory(name2)
-        if(name1_copied):
-            name1 = os.path.basename(name1)
-        if(name2_copied):
-            name2 = os.path.basename(name2)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        name1_copied = shutil.copy(name1, tmpdir)
+        name1_basename = os.path.basename(name1_copied)
 
-        target = open(name1, "r")
-        model = open(name2, "r")
-        if(name1_copied): files_target.append(target)
-        if(name2_copied): files_model.append(model)
+        names_copied = copy_to_tmp(tmpdir, names2)
 
-        if(clear_target and not target_done):
-            clear(name1)
-            name1 = name1[0:len(name1)-4] + "m" + name1[len(name1)-4:]
+        for name in names_copied:
+
+            name2 = os.path.join(tmpdir, name)
+            name1 = os.path.join(tmpdir, name1)
             target = open(name1, "r")
-            files_target.append(target)
-
-        clear(name2)
-        name2 = name2[0:len(name2)-4] + "m" + name2[len(name2)-4:]
-        model = open(name2, "r")
-        files_model.append(model)
-
-        print("Target:")
-        targetData = analyze(name1)
-        print("")
-        print(targetData)
-        print("")
-        print("Model:")
-        modelData = analyze(name2)
-        print("")
-        print(modelData)
-        print("")
-
-        if(modelData["single_protein"] == True):
-            output_file = name2[0:len(name2)-4] + "_id" + name2[len(name2)-4:]
-            add_protein_chain_identifier(name2, output_file, modelData["RNA"])
-            name2 = name2[0:len(name2)-4] + "_id" + name2[len(name2)-4:]
             model = open(name2, "r")
-            files_model.append(model)
+            clear(name2)
+            model.close()
+            os.remove(name2)
+            name2 = name2[0:len(name2)-4] + "m" + name2[len(name2)-4:]
+            model = open(name2, "r")
+
+            print("Target:")
+            targetData = analyze(name1)
+            print("\n", targetData, "\n")
+            print("Model:")
             modelData = analyze(name2)
-            print("")
-            print(modelData)
-            print("")
+            print("\n", modelData, "\n")
 
-        if (not modelData["RNA"].isalpha()):
-            id = find_next_identifier(modelData["Protein"])
-            rep = modelData["RNA"] + ">" + id
-            output = name2[0:len(name2)-4] + "_t" + name2[len(name2)-4:]
-            command = f'rna_pdb_tools.py --rename-chain \'{rep}\' {name2} > {output}'
-            subprocess.run(["bash", "-i", "-c", command])
-            name2 = output
+            if(modelData["single_protein"] == True):
+                name2 = single_chain_rename(name2, modelData, model)
+                model = open(name2, "r")
+                modelData = analyze(name2)
+                print("\n", modelData, "\n")
+
+            if (not modelData["RNA"].isalpha()):
+                name2 = alpha_rename(name2, modelData, model)
+                model = open(name2, "r")
+                modelData = analyze(name2)
+                print("Model (renamed):")
+                print("\n", modelData, "\n")
+
+            if(renumber):
+                if(custom_alignement):
+                    target, name1 = custom_renum(targetData, target_done, name1, target, target_renum)
+                    model, name2 = custom_renum(modelData, False, name2, model, model_renum)
+                else:
+                    target, name1 = auto_renum(targetData, target_done, name1, target)
+                    model, name2 = auto_renum(modelData, False, name2, model)
+
+            name2 = back_rename(modelData, name2, model)
             model = open(name2, "r")
-            files_model.append(model)
             modelData = analyze(name2)
-            print("Model (renamed):")
+
+        hb2_dict, target_HB2 = run_hbplus(tmpdir, name1)
+        if (not target_done): target_done = True
+
+        for model in hb2_dict.keys():
             print("")
-            print(modelData)
-            print("")
+            model_HB2 = open(os.path.join(tmpdir, model), "r")
 
-        target_renum = []
-        model_renum = []
-        target_to_renum = []
-        model_to_renum = []
-        renumber_model = False
-        renumber_target = False
-        custom_renum_target = False
-        custom_renum_model = False
+            os.makedirs("tmp_chains", exist_ok=True)
 
-        if ((targetData[targetData["RNA"]][2] - targetData[targetData["RNA"]][1] + 1 != targetData[targetData["RNA"]][3]) or
-                targetData[targetData["RNA"]][1] != 1 and not target_done):
-            renumber_target = True
-            print("Mismatched RNA numbering (target). Auto-renumber? (Y/N)")
-            ans = input()
-            if (ans == "Y"):
-                target_to_renum.append(targetData[targetData["RNA"]][0])
-            else:
-                print("Enter custom alignement:")
-                custom_renum_target = True
-                ans = input()
-                renum = ans[0]
-                model_renum.append(renum)
+            chains_mapping_model = modelData["RNA"] + ":" + targetData["RNA"]
 
-        if ((modelData[modelData["RNA"]][2] - modelData[modelData["RNA"]][1] + 1 != modelData[modelData["RNA"]][3] or
-             modelData[modelData["RNA"]][1] != 1)):
-            renumber_model = True
-            print("Mismatched RNA numbering (model). Auto-renumber? (Y/N)")
-            ans = input()
-            if (ans == "Y"):
-                model_to_renum.append(modelData[modelData["RNA"]][0])
-            else:
-                print("Enter custom alignement:")
-                custom_renum_model = True
-                ans = input()
-                renum = ans[0]
-                model_renum.append(renum)
-
-        for id in modelData["Protein"].split(","):
-            if (modelData[id][2] - modelData[id][1] + 1 != modelData[id][3] or modelData[id][1] != 1):
-                renumber_model = True
-                print("Mismatched Protein Chain " + id + " numbering (model). Auto-renumber? (Y/N)")
-                ans = input()
-                if (ans == "Y"):
-                    model_to_renum.append(modelData[id][0])
-                else:
-                    print("Enter custom alignement:")
-                    custom_renum_model = True
-                    ans = input()
-                    model_renum.append(ans)
-
-        for id in targetData["Protein"].split(","):
-            if (targetData[id][2] - targetData[id][1] + 1 != targetData[id][3] or targetData[id][1] != 1 and not target_done):
-                renumber_target = True
-                print("Mismatched Protein Chain " + id + " numbering (target) Auto-renumber? (Y/N)")
-                ans = input()
-                if (ans == "Y"):
-                    target_to_renum.append(targetData[id][0])
-                else:
-                    print("Enter custom alignement:")
-                    custom_renum_target = True
-                    ans = input()
-                    target_renum.append(ans)
-
-        if (renumber_target):
-            auto_renumber(name1, target_to_renum, name1[0:len(name1)-4] + "_ren" + name1[len(name1)-4:])
-            name1 = name1[0:len(name1)-4] + "_ren" + name1[len(name1)-4:]
-            target = open(name1, "r")
-            files_target.append(target)
-
-        if (renumber_model):
-            auto_renumber(name2, model_to_renum, name2[0:len(name2)-4] + "_ren" + name2[len(name2)-4:])
-            name2 = name2[0:len(name2)-4] + "_ren" + name2[len(name2)-4:]
-            model = open(name2, "r")
-            files_model.append(model)
-
-        if(custom_renum_target):
-            rna_tools_renumerate(name2, name1[0:len(name1)-4] + "_cus" + name1[len(name1)-4:], ",".join(target_renum))
-            name1 = name1[0:len(name1)-4] + "_cus" + name1[len(name1)-4:]
-            target = open(name1, "r")
-            files_target.append(target)
-
-        if (custom_renum_model):
-            rna_tools_renumerate(name2, name2[0:len(name2)-4] + "_cus" + name2[len(name2)-4:], ",".join(model_renum))
-            name2 = name2[0:len(name2)-4] + "_cus" + name2[len(name2)-4:]
-            model = open(name2, "r")
-            files_model.append(model)
-
-        rep = modelData["RNA"] + ">" + "0"
-        output = name2[0:len(name2)-4] + "_t" + name2[len(name2)-4:]
-        command = f'rna_pdb_tools.py --rename-chain \'{rep}\' {name2} > {output}'
-        subprocess.run(["bash", "-i", "-c", command])
-        name2 = output
-        model = open(name2, "r")
-        files_model.append(model)
-        modelData = analyze(name2)
-
-        run_hbplus(name1, name2, target_done)
-        name3 = name1[0:len(name1) - 3] + "hb2"
-        name4 = name2[0:len(name2) - 3] + "hb2"
-        target_HB2 = open(name3, "r")
-        if(not target_done): target_done = True
-        model_HB2 = open(name4, "r")
-        files_target.append(target_HB2)
-        files_model.append(model_HB2)
-
-        os.makedirs("tmp", exist_ok=True)
-
-        chains_mapping_model = modelData["RNA"] + ":" + targetData["RNA"]
-
-        if(not rmsd):
             target_mappings = create_combinations(targetData["Protein"].split(","), modelData["Protein"].split(","))
-            max_inf = 0
-            max_mapping = ""
-            for mapping in target_mappings:
-                target_pairs = get_pairs(target_HB2, "A", mapping.split(","))
-                model_pairs = get_pairs(model_HB2, "0", chains_mapping_model.split(","))
-                if (len(model_pairs) == 0):
-                    pass
-                elif (len(target_pairs) == 0):
-                    pass
-                else:
-                    inf = get_inf(target_pairs, model_pairs)
-                    if(inf > max_inf):
-                        max_inf = inf
-                        max_mapping = mapping
 
-            inf = max_inf
-        else:
-            chains_mapping_target = get_mapping(targetData, modelData, target, model)
-            target_pairs = get_pairs(target_HB2, "A", chains_mapping_target.split(","))
-            model_pairs = get_pairs(model_HB2, "0", chains_mapping_model.split(","))
-            inf = get_inf(target_pairs, model_pairs)
-        print("")
-        if(raw_inf):
-            print(format(inf, ".3f"))
-            infs.append([name, format(inf, ".3f")])
-        else:
-            inf = inf * modelData["residues_no"] / targetData["residues_no"]
-            print(format(inf, ".3f"))
-            infs.append([name, format(inf, ".3f")])
+            inf = get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2)
 
-        tmp_files = glob.glob(os.path.join("tmp", "*"))
-        for tmp_file in tmp_files:
-            pass
-            try:
-                os.remove(tmp_file)
-            except Exception as e:
-                print(f'Error deleting {tmp_file}: {e}')
+            model_HB2.close()
 
-        if not os.listdir("tmp"):
-            os.rmdir("tmp")
+            if(raw_inf):
+                print(format(inf, ".3f"))
+                hb2_dict[model] = inf
+                infs.append([model, format(hb2_dict[model], ".3f")])
 
-        for file in files_model:
-            file.close()
-            file_name = file.name
-            try:
-                os.remove(file_name)
-                files_model.remove(file)
-            except Exception as e:
-                print(f"Error deleting {file_name}: {e}")
+            else:
+                inf = inf * modelData["residues_no"] / targetData["residues_no"]
+                print(format(inf, ".3f"))
+                hb2_dict[model] = inf
+                infs.append([model, format(hb2_dict[model], ".3f")])
 
-        try:
-            os.remove("hbdebug.dat")
-        except Exception as e:
-            print(f"Error deleting {'hbdebug.dat'}: {e}")
 
-    for file in files_target:
-        file.close()
-        file_name = file.name
-        try:
-            os.remove(file_name)
-        except Exception as e:
-            print(f"Error deleting {file_name}: {e}")
+            tmp_files = glob.glob(os.path.join("tmp_chains", "*"))
+            for tmp_file in tmp_files:
+                pass
+                try:
+                    os.remove(tmp_file)
+                except Exception as e:
+                    print(f'Error deleting {tmp_file}: {e}')
+
+            if not os.listdir("tmp_chains"):
+                os.rmdir("tmp_chains")
 
     return infs
 
 
-name1 = input()
-name2 = input()
+def main(argv):
 
-adj = False
-print("In case of mismatched residues number, adjust INF (INF = INF * res_model/res_target)?: (Y/N)")
-ans = input()
-if(ans == "Y"): adj = True
+    parser = argparse.ArgumentParser(description="Compare model and target.")
+    parser.add_argument('target_path', type=str, help='target')
+    parser.add_argument('model_path', type=str, help='model')
 
-if(os.path.isdir(name2)):
-    files_to_compare = [os.path.join(name2, f) for f in os.listdir(name2) if f.endswith('.pdb')]
-    print(files_to_compare)
-    infs = compare(name1, files_to_compare, False, False, adj)
-else:
-    infs = compare(name1, [name2], False, False, False)
-print("")
-print(infs)
+    parser.add_argument('-a', '--adjust_inf', action='store_true', help='Adjust inf')
+    parser.add_argument('-r', '--renumber_structures', action='store_true', help='Renumber chains')
+    parser.add_argument('-c', '--custom_alignement', action='store_true', help='Cutom alignement')
+
+    parser.add_argument('--target_renum', type=str, help='Target renumbering')
+    parser.add_argument('--model_renum', type=str, help='Model renumbering')
+
+    args = parser.parse_args()
+
+    if (os.path.isdir(args.model_path)):
+        files_to_compare = [os.path.join(args.model_path, f) for f in os.listdir(args.model_path) if f.endswith('.pdb')]
+        print(files_to_compare)
+        infs = compare(args.target_path, files_to_compare, args.custom_alignement, args.adjust_inf, args.renumber_structures, args.target_renum, args.model_renum)
+    else:
+        infs = compare(args.target_path, [args.model_path], args.custom_alignement, args.adjust_inf, args.renumber_structures, args.target_renum, args.model_renum)
+    print("")
+    print(infs)
+    save_csv('ranking.csv', infs)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
