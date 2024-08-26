@@ -91,3 +91,11 @@ Example usage is provided in the /examples folder.
  * hbplus (https://www.ebi.ac.uk/thornton-srv/software/HBPLUS)
 
 Both tools should be added to PATH or otherwise accesible.
+
+## Tests:
+To test, run ```run_tests.sh```. Expected result:
+```
+[['R1189TS035_3om_t_t.hb2', '0.000'], ['R1190TS494_3om_t_t.hb2', '0.086'], ['R1189TS035_4om_t_t.hb2', '0.000'], ['R1189TS035_5om_t_t.hb2', '0.000']]
+[['mR1190TS035_1odm_t_ren_t.hb2', '0.091']]
+[['mR1190TS035_1odm_t_cus_t.hb2', '0.091']]
+```
