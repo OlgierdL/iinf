@@ -11,7 +11,7 @@ To do that, it executes the following steps:
 
 ## Output:
 
-The tool allows users to compute the INF value between two .pdb files.
+The tool allows users to compute the INF value between two or more .pdb files.
 
 The INF value is the measure of similarity between two molecules.
 This is given by the formula:
@@ -58,25 +58,22 @@ To set environment variables, the ```set-exports.sh``` script can be used. Make 
 
 ```source ./set-exports.sh```
 
-## Usage:
+## Manual:
 
 To run:
 
-```python3 casp.py```
+```python3 casp.py "target.pdb" "prediction.pdb"```
 
-Then input:
+The prediction.pdb can be replaced by a directory containing multiple .pdb files.
 
-```target.pdb```
+Parameters:
 
-```prediction.pdb``` (or ```directory of .pdb files```)
+```-a, --adjust_inf``` - adjust the INF value, if the amount of residues differs between target and prediction, the result is multiplied by residues_no_predicition/residues_no_target
+```-r, --renumber_structures``` - renumber chains, so that residue numbering is consistant for comparison.
+```-c, --custom_alignement``` - use custom alignement format for renumbering. Example below.
 
-And ```Y/N``` to decide whether the INF is to adjusted for mismatched residue numbers. The default answer is no.
-
-Giving a directory instead of a single prediciton will result in the tool comparing all .pdb files of the directory to the given targed file.
-
-NOTE: Depending on your environment, the job may be stopped upon running hbplus. It will finish correctly when resumed.
-
-In case of mismatched line numbering, the user will be asked whether to auto-renumber. If not, then the user will be aksed to input custom alignement.
+```--target_renum``` - custom target alignement.
+```--model_renum``` -custom model alignement
 
 Alignement format example (protein chain A):
 
