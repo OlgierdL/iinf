@@ -102,7 +102,15 @@ Both tools should be added to PATH or otherwise accesible.
 ## Tests:
 To test, run ```run_tests.sh```. Expected result:
 ```
-[['R1189TS035_3om_t_t.hb2', '0.000'], ['R1190TS494_3om_t_t.hb2', '0.086'], ['R1189TS035_4om_t_t.hb2', '0.000'], ['R1189TS035_5om_t_t.hb2', '0.000']]
-[['mR1190TS035_1odm_t_ren_t.hb2', '0.091']]
-[['mR1190TS035_1odm_t_cus_t.hb2', '0.091']]
+model,score
+7qde#10,0.712
+7qde#2,0.632
+7qde#3,0.516
+7qde#4,0.624
+7qde#5,0.485
+7qde#6,0.505
+7qde#7,0.562
+7qde#8,0.650
+7qde#9,0.500
+
 ```
