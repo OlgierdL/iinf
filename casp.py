@@ -441,16 +441,8 @@ def back_rename(modelData, name2, model):
     return output
 
 
-def custom_renum(data, done, name, file, renum):
-    renumber = False
-    if ((data[data["RNA"]][2] - data[data["RNA"]][1] + 1 != data[data["RNA"]][3]) or data[data["RNA"]][1] != 1 and not done):
-        renumber = True
-
-    for id in data["Protein"].split(","):
-        if (data[id][2] - data[id][1] + 1 != data[id][3] or data[id][1] != 1 and not done):
-            renumber = True
-
-    if (renumber):
+def custom_renum(done, name, file, renum):
+    if(not done):
         rna_tools_renumerate(name, name[0:len(name) - 4] + "_cus" + name[len(name) - 4:], renum)
         file.close()
         os.remove(name)
@@ -458,10 +450,8 @@ def custom_renum(data, done, name, file, renum):
         new_file = open(new_name, "r")
         print("renumbered")
         return new_file, new_name
-    return file, name
 
-
-def auto_renum(data, done, name, file):
+def auto_renum(data, data2, done, name, file):
     to_renum = []
     renumber = False
 
@@ -485,12 +475,10 @@ def auto_renum(data, done, name, file):
     return file, name
 
 
-def get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2):
+def get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2, targetData, modelData):
     max_inf = 0
-    max_mapping = ""
-    model_pairs_max = []
-    target_pairs_max = []
     for mapping in target_mappings:
+        print(target_mappings)
         target_pairs = get_pairs(target_HB2, "A", mapping.split(","))
         model_pairs = get_pairs(model_HB2, "0", chains_mapping_model.split(","))
         if (len(model_pairs) == 0):
@@ -552,8 +540,8 @@ def compare (name1, names2, custom_alignement, raw_inf, renumber, target_renum, 
 
             if(renumber):
                 if(custom_alignement):
-                    target, name1 = custom_renum(targetData, target_done, name1, target, target_renum)
-                    model, name2 = custom_renum(modelData, False, name2, model, model_renum)
+                    target, name1 = custom_renum(target_done, name1, target, target_renum)
+                    model, name2 = custom_renum(False, name2, model, model_renum)
                 else:
                     target, name1 = auto_renum(targetData, target_done, name1, target)
                     model, name2 = auto_renum(modelData, False, name2, model)
