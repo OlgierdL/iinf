@@ -68,6 +68,11 @@ The prediction.pdb can be replaced by a directory containing multiple .pdb files
 
 Parameters:
 
+```--target_path``` - path to target.pdb
+
+```--model_path``` - path to model.pdb
+
+
 ```-a, --adjust_inf``` - adjust the INF value, if the amount of residues differs between target and prediction, the result is multiplied by residues_no_predicition/residues_no_target
 
 ```-r, --renumber_structures``` - renumber chains, so that residue numbering is consistant for comparison.
