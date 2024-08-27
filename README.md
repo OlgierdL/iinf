@@ -1,4 +1,4 @@
-# A tool to asses precision of molecular predictions
+# A tool to assess a quality of RNAP predictions
 
 ## Features:
 
