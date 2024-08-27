@@ -16,7 +16,7 @@ from pathlib import Path
 import csv
 
 def clear(file):
-    output_file = file[0:len(file)-4] + "m" + file[len(file)-4:]
+    output_file = file[0:len(file)-4] + "_tmp_m" + file[len(file)-4:]
     with open(file, "r") as infile, open(output_file, "w") as outfile:
         no = None
         a = 0
@@ -158,7 +158,7 @@ def get_mapping(targetData, modelData, target, model):
 
 def run_hbplus(tmpdir, name1):
     command = f'bash -i -c "find {tmpdir} -name \'*.pdb\' -exec hbplus \\{{\\}} \\;"'
-    subprocess.run(command, shell=True, cwd=tmpdir)
+    subprocess.run(command, shell=True, cwd=tmpdir, stdout=subprocess.DEVNULL)
     name3 = name1[0:len(name1) - 3] + "hb2"
     target_HB2 = open(name3, "r")
     hb2_dict = {f.name: 0.0 for f in Path(tmpdir).glob("*.hb2") if f.stem != Path(name3).stem}
@@ -309,7 +309,6 @@ def convert_to_wsl_path(path):
 
 def rna_tools_renumerate(filename, output_file, edit_command):
     command = f'rna_pdb_tools.py --edit \'{edit_command}\' {filename} > {output_file}'
-    print(command)
     subprocess.run(["bash", "-i", "-c", command])
 
 
@@ -448,10 +447,9 @@ def custom_renum(done, name, file, renum):
         os.remove(name)
         new_name = name[0:len(name) - 4] + "_cus" + name[len(name) - 4:]
         new_file = open(new_name, "r")
-        print("renumbered")
         return new_file, new_name
 
-def auto_renum(data, data2, done, name, file):
+def auto_renum(data, done, name, file):
     to_renum = []
     renumber = False
 
@@ -470,15 +468,13 @@ def auto_renum(data, data2, done, name, file):
         os.remove(name)
         new_name = name[0:len(name) - 4] + "_ren" + name[len(name) - 4:]
         new_file = open(new_name, "r")
-        print("renumbered")
         return new_file, new_name
     return file, name
 
 
-def get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2, targetData, modelData):
+def get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2):
     max_inf = 0
     for mapping in target_mappings:
-        print(target_mappings)
         target_pairs = get_pairs(target_HB2, "A", mapping.split(","))
         model_pairs = get_pairs(model_HB2, "0", chains_mapping_model.split(","))
         if (len(model_pairs) == 0):
@@ -487,56 +483,59 @@ def get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2, ta
             pass
         else:
             inf = get_inf(target_pairs, model_pairs)
-            print(inf)
             if (inf > max_inf):
                 max_inf = inf
-                max_mapping = mapping
-                model_pairs_max = model_pairs
-                target_pairs_max = target_pairs
     return max_inf
 
 
-def compare (name1, names2, custom_alignement, raw_inf, renumber, target_renum, model_renum):
+def shorten_for_output(input_string):
+    tmp_index = input_string.find("_tmp")
+
+    if tmp_index != -1:
+        part_until_tmp = input_string[:tmp_index]
+    else:
+        part_until_tmp = input_string
+
+    return part_until_tmp
+
+
+def compare (name1, names2, custom_alignement, adj_inf, renumber, target_renum, model_renum):
     infs = []
     target_done = False
 
     with tempfile.TemporaryDirectory() as tmpdir:
         name1_copied = shutil.copy(name1, tmpdir)
         name1_basename = os.path.basename(name1_copied)
+        name1 = ""
+        name2 = ""
 
         names_copied = copy_to_tmp(tmpdir, names2)
 
         for name in names_copied:
 
             name2 = os.path.join(tmpdir, name)
-            name1 = os.path.join(tmpdir, name1)
+            if(not target_done):
+                name1 = os.path.join(tmpdir, name1_basename)
             target = open(name1, "r")
             model = open(name2, "r")
             clear(name2)
             model.close()
             os.remove(name2)
-            name2 = name2[0:len(name2)-4] + "m" + name2[len(name2)-4:]
+            name2 = name2[0:len(name2)-4] + "_tmp_m" + name2[len(name2)-4:]
             model = open(name2, "r")
 
-            print("Target:")
-            targetData = analyze(name1)
-            print("\n", targetData, "\n")
-            print("Model:")
+            if(not target_done): targetData = analyze(name1)
             modelData = analyze(name2)
-            print("\n", modelData, "\n")
 
             if(modelData["single_protein"] == True):
                 name2 = single_chain_rename(name2, modelData, model)
                 model = open(name2, "r")
                 modelData = analyze(name2)
-                print("\n", modelData, "\n")
 
             if (not modelData["RNA"].isalpha()):
                 name2 = alpha_rename(name2, modelData, model)
                 model = open(name2, "r")
                 modelData = analyze(name2)
-                print("Model (renamed):")
-                print("\n", modelData, "\n")
 
             if(renumber):
                 if(custom_alignement):
@@ -549,12 +548,11 @@ def compare (name1, names2, custom_alignement, raw_inf, renumber, target_renum, 
             name2 = back_rename(modelData, name2, model)
             model = open(name2, "r")
             modelData = analyze(name2)
+            if (not target_done): target_done = True
 
         hb2_dict, target_HB2 = run_hbplus(tmpdir, name1)
-        if (not target_done): target_done = True
 
         for model in hb2_dict.keys():
-            print("")
             model_HB2 = open(os.path.join(tmpdir, model), "r")
 
             os.makedirs("tmp_chains", exist_ok=True)
@@ -567,16 +565,16 @@ def compare (name1, names2, custom_alignement, raw_inf, renumber, target_renum, 
 
             model_HB2.close()
 
-            if(raw_inf):
-                print(format(inf, ".3f"))
+            if(adj_inf):
+                inf = inf * modelData["residues_no"] / targetData["residues_no"]
                 hb2_dict[model] = inf
-                infs.append([model, format(hb2_dict[model], ".3f")])
+                model_name = shorten_for_output(model)
+                infs.append([model_name, format(hb2_dict[model], ".3f")])
 
             else:
-                inf = inf * modelData["residues_no"] / targetData["residues_no"]
-                print(format(inf, ".3f"))
                 hb2_dict[model] = inf
-                infs.append([model, format(hb2_dict[model], ".3f")])
+                model_name = shorten_for_output(model)
+                infs.append([model_name, format(hb2_dict[model], ".3f")])
 
 
             tmp_files = glob.glob(os.path.join("tmp_chains", "*"))
@@ -589,34 +587,45 @@ def compare (name1, names2, custom_alignement, raw_inf, renumber, target_renum, 
 
             if not os.listdir("tmp_chains"):
                 os.rmdir("tmp_chains")
-
+    infs.sort()
+    infs = [["model", "score"]] + infs
     return infs
 
 
 def main(argv):
 
     parser = argparse.ArgumentParser(description="Compare model and target.")
-    parser.add_argument('target_path', type=str, help='target')
-    parser.add_argument('model_path', type=str, help='model')
+    parser.add_argument("--target_path", type=str, help="target", required=True)
+    parser.add_argument("--model_path", type=str, help="model", required=True)
 
-    parser.add_argument('-a', '--adjust_inf', action='store_true', help='Adjust inf')
-    parser.add_argument('-r', '--renumber_structures', action='store_true', help='Renumber chains')
-    parser.add_argument('-c', '--custom_alignement', action='store_true', help='Cutom alignement')
+    parser.add_argument("-a", "--adjust_inf", action="store_true", help="Adjust inf")
+    parser.add_argument("-r", "--renumber_structures", action="store_true", help="Renumber chains")
+    parser.add_argument("-c", "--custom_alignement", action="store_true", help="Cutom alignement")
 
-    parser.add_argument('--target_renum', type=str, help='Target renumbering')
-    parser.add_argument('--model_renum', type=str, help='Model renumbering')
+    parser.add_argument("--target_renum", type=str, help="Target renumbering")
+    parser.add_argument("--model_renum", type=str, help="Model renumbering")
 
     args = parser.parse_args()
 
-    if (os.path.isdir(args.model_path)):
+    if not os.path.isfile(args.target_path):
+        print(f"Error: Target path '{args.target_path}' does not exist or is not a file.")
+        sys.exit(1)
+
+    if not os.path.exists(args.model_path):
+        print(f"Error: Model path '{args.model_path}' does not exist.")
+        sys.exit(1)
+
+    if os.path.isdir(args.model_path):
         files_to_compare = [os.path.join(args.model_path, f) for f in os.listdir(args.model_path) if f.endswith('.pdb')]
-        print(files_to_compare)
-        infs = compare(args.target_path, files_to_compare, args.custom_alignement, args.adjust_inf, args.renumber_structures, args.target_renum, args.model_renum)
+        if not files_to_compare:
+            print(f"Error: No PDB files found in directory '{args.model_path}'.")
+            sys.exit(1)
     else:
-        infs = compare(args.target_path, [args.model_path], args.custom_alignement, args.adjust_inf, args.renumber_structures, args.target_renum, args.model_renum)
-    print("")
-    print(infs)
-    save_csv('ranking.csv', infs)
+        files_to_compare = [args.model_path]
+
+    infs = compare(args.target_path, files_to_compare, args.custom_alignement, args.adjust_inf,
+                   args.renumber_structures, args.target_renum, args.model_renum)
+    save_csv("ranking.csv", infs)
 
 
 if __name__ == "__main__":
