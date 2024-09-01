@@ -625,7 +625,8 @@ def main(argv):
 
     infs = compare(args.target_path, files_to_compare, args.custom_alignement, args.adjust_inf,
                    args.renumber_structures, args.target_renum, args.model_renum)
-    save_csv("ranking.csv", infs)
+    target_filename_without_ext = os.path.splitext(os.path.basename(args.target_path))[0]
+    save_csv(os.path.join(os.path.dirname(args.target_path),'{}_ranking.csv'.format(target_filename_without_ext)), infs)
 
 
 if __name__ == "__main__":

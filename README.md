@@ -2,18 +2,18 @@
 
 ## Features:
 
-This is a tool for assesing the correctness of in-silico models of molecular structures containing an RNA molecule and a number of protein chains by INF value. It is based on RNA Tools and HBPlus.
+A tool that allows users to assess the interface accuracy of in-silico 3D models of RNAPs using INF-based score (Interaction Network Fidelity]. It uses the following packages rna-tools and HBPlus.
 To do that, it executes the following steps:
- * Prepare the model file for usage,
- * Analyze both target and model files, rename and renumber chains if necessary (using rna-tools),
- * Run HBPlus on both files to find hydrogen bonds,
- * Compare the found molecule pairs in target and model to asses similarity by calculating the INF value.
+ * Preprocess the model(s) to ensure consistency with the reference structure (target),
+ * Analyze both target and model(s), rename and renumber chains if necessary (using the rna-tools),
+ * Run HBPlus on all PDB files considered to identify hydrogen bonds,
+ * Compare hydrogen bonds found in the model within the context of the reference structure to compute model-target interface similarity.
 
 ## Output:
 
-The tool allows users to compute the INF value between two or more .pdb files.
+The tool allows users to compute the INF (Interaction Network Fidelity) score between two or more PDB files.
 
-The INF value is the measure of similarity between two molecules.
+The INF score (a range between 0.0 and 1.0 - the higher value the better) is the measure of similarity between two molecule interfaces considered.
 This is given by the formula:
 
 $$
@@ -32,19 +32,17 @@ $$\text{fp}$$
 is the number of pairs (bonds) that are found both in the prediction but not in the target file
 
 ## Installation:
-The script ```casp_compare.py``` is viable to be run in an IDE or directly executed.
+The script ```compare.py``` is viable to be run in an IDE or directly executed.
 
 Beforehand, it requires installing rna-tools and HBPlus.
- RNA Tools:
- RNA tools can be installed using the following installation guide:
+ rna-tools can be installed using the following installation guide:
  https://rna-tools.readthedocs.io/en/latest/install.html
- It may be needed to add path to rna-tools to the PATH in Linux (export PATH="$PATH:<path_to_rna_tools_scripts>")
+ Next, its path should be added to the PATH environment variable in Linux (export PATH="$PATH:<path_to_rna_tools_scripts>").
 
- HBPlus:
- HBplus can be installed from the website:
+ HBPlus can be installed from the website:
  https://www.ebi.ac.uk/thornton-srv/software/HBPLUS
  where installation instructions are provided. 
- Then, add HBPlus to PATH (export PATH="$PATH:<path_to_hbplus>")
+ Next, its path should be added to the PATH environment variable in Linux (export PATH="$PATH:<path_to_hbplus>")
 
 Using Conda:
 
@@ -62,28 +60,25 @@ To set environment variables, the ```set-exports.sh``` script can be used. Make 
 
 To run:
 
-```python3 casp.py "target.pdb" "prediction.pdb"```
+```python3 compare.py --target_path "target.pdb" --model_path "prediction.pdb"```
 
-The prediction.pdb can be replaced by a directory containing multiple .pdb files.
+The prediction.pdb can be replaced by a directory containing multiple PDB files.
 
 Parameters:
 
-```--target_path``` - path to target.pdb
+```--target_path``` - path to the reference structure (e.g., target.pdb).
 
-```--model_path``` - path to model.pdb
+```--model_path``` - path to the 3D model (s) (e.g., model.pdb).
 
+```-a, --adjust_inf``` - adjust the INF value, if the amount of residues differs between target and prediction, the resultant INF score is multiplied by a fraction residues_no_in_predicition/residues_no_in_target.
 
-```-a, --adjust_inf``` - adjust the INF value, if the amount of residues differs between target and prediction, the result is multiplied by residues_no_predicition/residues_no_target
+```-r, --renumber_structures``` - renumber all chains in both target and model(s), so that residue numbering is consistant for comparison.
 
-```-r, --renumber_structures``` - renumber chains, so that residue numbering is consistant for comparison.
-
-```-c, --custom_alignement``` - use custom alignement format for renumbering. Example below.
-
-
+```-c, --custom_alignement``` - use user own (custom) alignement format for renumbering. Example below.
 
 ```--target_renum``` - custom target alignement.
 
-```--model_renum``` -custom model alignement
+```--model_renum``` - custom model(s) alignement.
 
 Alignement format example (protein chain A):
 
@@ -91,7 +86,7 @@ Alignement format example (protein chain A):
 A:1-54>A:1-54,A:56-56>A:55-55
 ```
 ## Example Usage:
-Example usage is provided in the /examples folder.
+Example usage is provided in the ```run_tests.sh``` file.
 
 ## Dependancies:
  * rna-tools ([rna-tools.readthedocs.io](https://rna-tools.readthedocs.io/en/latest/))
