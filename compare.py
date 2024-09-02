@@ -448,6 +448,7 @@ def custom_renum(done, name, file, renum):
         new_name = name[0:len(name) - 4] + "_cus" + name[len(name) - 4:]
         new_file = open(new_name, "r")
         return new_file, new_name
+    return file, name
 
 def auto_renum(data, done, name, file):
     to_renum = []
@@ -510,9 +511,7 @@ def compare (name1, names2, custom_alignement, adj_inf, renumber, target_renum, 
         name2 = ""
 
         names_copied = copy_to_tmp(tmpdir, names2)
-
         for name in names_copied:
-
             name2 = os.path.join(tmpdir, name)
             if(not target_done):
                 name1 = os.path.join(tmpdir, name1_basename)
@@ -539,8 +538,8 @@ def compare (name1, names2, custom_alignement, adj_inf, renumber, target_renum, 
 
             if(renumber):
                 if(custom_alignement):
-                    target, name1 = custom_renum(target_done, name1, target, target_renum)
-                    model, name2 = custom_renum(False, name2, model, model_renum)
+                    if(target_renum != ""): target, name1 = custom_renum(target_done, name1, target, target_renum)
+                    if(name[0:len(name)-4] in model_renum.keys()): model, name2 = custom_renum(False, name2, model, model_renum[name[0:len(name)-4]])
                 else:
                     target, name1 = auto_renum(targetData, target_done, name1, target)
                     model, name2 = auto_renum(modelData, False, name2, model)
@@ -600,10 +599,8 @@ def main(argv):
 
     parser.add_argument("-a", "--adjust_inf", action="store_true", help="Adjust inf")
     parser.add_argument("-r", "--renumber_structures", action="store_true", help="Renumber chains")
-    parser.add_argument("-c", "--custom_alignement", action="store_true", help="Cutom alignement")
 
-    parser.add_argument("--target_renum", type=str, help="Target renumbering")
-    parser.add_argument("--model_renum", type=str, help="Model renumbering")
+    parser.add_argument("-c", "--custom_alignement", type=str, help="Custom renumbering", default=None)
 
     args = parser.parse_args()
 
@@ -623,10 +620,22 @@ def main(argv):
     else:
         files_to_compare = [args.model_path]
 
-    infs = compare(args.target_path, files_to_compare, args.custom_alignement, args.adjust_inf,
-                   args.renumber_structures, args.target_renum, args.model_renum)
+    custom_renumbering = False
+    custom_target_renum = ""
+    custom_model_renum = {}
+    if(not args.custom_alignement is None):
+        custom_renumbering = True
+        custom_renums = args.custom_alignement.split(";")
+        for renum in custom_renums:
+            name, renum = renum.split("|")
+            if any(os.path.splitext(os.path.basename(path))[0] == name for path in files_to_compare):
+                custom_model_renum[name] = renum
+            if(name == os.path.splitext(os.path.basename(args.target_path))[0]): custom_target_renum = renum
+
+    infs = compare(args.target_path, files_to_compare, custom_renumbering, args.adjust_inf,
+                   args.renumber_structures, custom_target_renum, custom_model_renum)
     target_filename_without_ext = os.path.splitext(os.path.basename(args.target_path))[0]
-    save_csv(os.path.join(os.path.dirname(args.target_path),'{}_ranking.csv'.format(target_filename_without_ext)), infs)
+    save_csv(os.path.join(os.path.dirname(args.target_path), '{}_ranking.csv'.format(target_filename_without_ext)),infs)
 
 
 if __name__ == "__main__":
