@@ -76,15 +76,13 @@ Parameters:
 
 ```-c, --custom_alignement``` - use user own (custom) alignement format for renumbering. Example below.
 
-```--target_renum``` - custom target alignement.
-
-```--model_renum``` - custom model(s) alignement.
-
-Alignement format example (protein chain A):
+Alignement format example (filename|alignement;[next]):
 
 ```
-A:1-54>A:1-54,A:56-56>A:55-55
+7qde#2|A:103-113>C:103-113;7qde#10|A:103-113>A:1-11
 ```
+
+Not giving an alignement for a file will result in it not being renumbered.
 ## Example Usage:
 Example usage is provided in the ```run_tests.sh``` file.
 
@@ -96,6 +94,9 @@ Both tools should be added to PATH or otherwise accesible.
 
 ## Tests:
 To test, run ```run_tests.sh```. Expected result:
+
+For 7qde:
+
 ```
 model,score
 7qde#10,0.712
@@ -108,4 +109,12 @@ model,score
 7qde#8,0.650
 7qde#9,0.500
 
+```
+
+For 7qde_ca:
+
+```
+model,score
+7qde#10,0.000
+7qde#2,0.000
 ```
