@@ -118,3 +118,5 @@ model,score
 7qde#10,0.000
 7qde#2,0.000
 ```
+
+Note that the files in the second example are being renumbered. The renumbering result is included in the examples/renumbered
