@@ -2,7 +2,7 @@
 
 ## Features:
 
-A tool that allows users to assess the interface accuracy of in-silico 3D models of RNAPs using INF-based score (Interaction Network Fidelity]. It uses the following packages: rna-tools and HBPlus.
+A tool that allows users to assess the interface accuracy of in-silico 3D models of RNAPs using INF-based score (Interaction Network Fidelity). It uses the following packages: rna-tools and HBPlus.
 To do that, it executes the following steps:
  * Preprocess the model(s) to ensure consistency with the reference structure (target),
  * Analyze both target and model(s), rename and renumber chains if necessary (using the rna-tools),
