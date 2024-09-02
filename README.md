@@ -35,7 +35,7 @@ is the number of pairs (bonds) that are found both in the prediction but not in 
 The script ```compare.py``` is viable to be run in an IDE or directly executed.
 
 Beforehand, it requires installing rna-tools and HBPlus.
- rna-tools can be installed using the following installation guide:
+ The rna-tools can be installed using the following installation guide:
  https://rna-tools.readthedocs.io/en/latest/install.html
  Next, its path should be added to the PATH environment variable in Linux (export PATH="$PATH:<path_to_rna_tools_scripts>").
 
@@ -119,4 +119,4 @@ model,score
 7qde#2,0.000
 ```
 
-Note that the files in the second example are being renumbered. The renumbering result is included in the examples/renumbered
+Note that the files in the latter example are being renumbered. The renumbering result is included in the examples/renumbered
