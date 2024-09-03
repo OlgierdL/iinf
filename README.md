@@ -83,11 +83,11 @@ Alignement format example (filename|alignement;[next]):
 7qde#2|C:103-113>A:103-113;7qde#10|A:1-11>A:103-113
 ```
 
-Not giving an alignement for a file will result in it not being renumbered.
+No custom alignment introduced eliminates residue renumbering.
 
-## Example Usage:
+## Usage scenarios:
 
-Example usage is provided in the ```run_tests.sh``` file.
+Usage scenarios are provided in the ```run_*_test.sh``` files.
 
 ## Dependancies:
 
