@@ -32,6 +32,7 @@ $$\text{fp}$$
 is the number of pairs (bonds) that are found both in the prediction but not in the target file
 
 ## Installation:
+
 The script ```compare.py``` is viable to be run in an IDE or directly executed.
 
 Beforehand, it requires installing rna-tools and HBPlus.
@@ -79,23 +80,25 @@ Parameters:
 Alignement format example (filename|alignement;[next]):
 
 ```
-7qde#2|A:103-113>C:103-113;7qde#10|A:103-113>A:1-11
+7qde#2|C:103-113>A:103-113;7qde#10|A:1-11>A:103-113
 ```
 
 Not giving an alignement for a file will result in it not being renumbered.
+
 ## Example Usage:
+
 Example usage is provided in the ```run_tests.sh``` file.
 
 ## Dependancies:
+
  * rna-tools ([rna-tools.readthedocs.io](https://rna-tools.readthedocs.io/en/latest/))
  * hbplus (https://www.ebi.ac.uk/thornton-srv/software/HBPLUS)
 
 Both tools should be added to PATH or otherwise accesible.
 
 ## Tests:
-To test, run ```run_tests.sh```. Expected result:
 
-For 7qde:
+A) To execute very simple case, run ```run_basic_test.sh```. Expected result for '7qde' subdirectory is presented below:
 
 ```
 model,score
@@ -111,12 +114,10 @@ model,score
 
 ```
 
-For 7qde_ca:
+B) To experiment with custom alignment, run ```run_custom_alignment_test.sh```. Expected result for '7qde_ca' subdirectory is presented below:
 
 ```
 model,score
-7qde#10,0.000
-7qde#2,0.000
+7qde#10,0.712
+7qde#2,0.632
 ```
-
-Note that the files in the latter example are being renumbered. The renumbering result is included in the examples/renumbered

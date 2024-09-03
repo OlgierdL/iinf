@@ -538,8 +538,8 @@ def compare (name1, names2, custom_alignement, adj_inf, renumber, target_renum, 
 
             if(renumber):
                 if(custom_alignement):
-                    if(target_renum != ""): target, name1 = custom_renum(target_done, name1, target, target_renum)
-                    if(name[0:len(name)-4] in model_renum.keys()): model, name2 = custom_renum(False, name2, model, model_renum[name[0:len(name)-4]])
+                    if(target_renum != ""): target, name1 = custom_renum(target_done, name1, target, target_renum); targetData = analyze(name1)
+                    if(name[0:len(name)-4] in model_renum.keys()): model, name2 = custom_renum(False, name2, model, model_renum[name[0:len(name)-4]]); modelData = analyze(name2)
                 else:
                     target, name1 = auto_renum(targetData, target_done, name1, target)
                     model, name2 = auto_renum(modelData, False, name2, model)
@@ -550,18 +550,18 @@ def compare (name1, names2, custom_alignement, adj_inf, renumber, target_renum, 
             if (not target_done): target_done = True
 
         hb2_dict, target_HB2 = run_hbplus(tmpdir, name1)
-
+        
         for model in hb2_dict.keys():
             model_HB2 = open(os.path.join(tmpdir, model), "r")
 
             os.makedirs("tmp_chains", exist_ok=True)
 
             chains_mapping_model = modelData["RNA"] + ":" + targetData["RNA"]
-
+            
             target_mappings = create_combinations(targetData["Protein"].split(","), modelData["Protein"].split(","))
-
+            
             inf = get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2)
-
+            
             model_HB2.close()
 
             if(adj_inf):
@@ -574,7 +574,6 @@ def compare (name1, names2, custom_alignement, adj_inf, renumber, target_renum, 
                 hb2_dict[model] = inf
                 model_name = shorten_for_output(model)
                 infs.append([model_name, format(hb2_dict[model], ".3f")])
-
 
             tmp_files = glob.glob(os.path.join("tmp_chains", "*"))
             for tmp_file in tmp_files:
