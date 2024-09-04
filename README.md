@@ -5,7 +5,7 @@
 A tool that allows users to assess the interface accuracy of in-silico 3D models of RNAPs using INF-based score (Interaction Network Fidelity). It uses the following packages: rna-tools and HBPlus.
 To do that, it executes the following steps:
  * Preprocess the model(s) to ensure consistency with the reference structure (target),
- * Analyze both target and model(s), rename and renumber chains if necessary (using the rna-tools),
+ * Analyze both target and model(s), rename, renumber and delete parts of chains if necessary (using the rna-tools),
  * Run HBPlus on all PDB files considered to identify hydrogen bonds,
  * Compare hydrogen bonds found in the model within the context of the reference structure to compute model-target interface similarity.
 
@@ -77,6 +77,8 @@ Parameters:
 
 ```-c, --custom_alignement``` - use user own (custom) alignement format for renumbering. Example below.
 
+```-d, --custom_removal``` - use user own removal template for deleting parts of chains. Example below.
+
 Alignement format example (filename|alignement;[next]):
 
 ```
@@ -84,6 +86,12 @@ Alignement format example (filename|alignement;[next]):
 ```
 
 No custom alignment introduced eliminates residue renumbering.
+
+Removal format example (filename|removal;[next]):
+
+```
+7qde#1|A:112-113,B:281-282;7qde#2|C:112-113,B:281-282;7qde#10|A:10-11,B:281-282
+```
 
 ## Usage scenarios:
 
