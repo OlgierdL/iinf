@@ -312,6 +312,12 @@ def rna_tools_renumerate(filename, output_file, edit_command):
     subprocess.run(["bash", "-i", "-c", command])
 
 
+def rna_tools_delete(filename, edit_command):
+    for chain in edit_command.split(","):
+        command = f'rna_pdb_tools.py --delete \'{chain}\' --inplace {filename}'
+        subprocess.run(["bash", "-i", "-c", command])
+
+
 def find_next_identifier(identifiers):
     alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     identifiers_set = set(identifiers)
@@ -440,6 +446,11 @@ def back_rename(modelData, name2, model):
     return output
 
 
+def custom_delete(done, name, delete):
+    if(not done):
+        rna_tools_delete(name, delete)
+
+
 def custom_renum(done, name, file, renum):
     if(not done):
         rna_tools_renumerate(name, name[0:len(name) - 4] + "_cus" + name[len(name) - 4:], renum)
@@ -500,7 +511,7 @@ def shorten_for_output(input_string):
     return part_until_tmp
 
 
-def compare (name1, names2, custom_alignement, adj_inf, renumber, target_renum, model_renum):
+def compare (name1, names2, custom_alignement, adj_inf, renumber, target_renum, model_renum, delete, target_delete, model_delete):
     infs = []
     target_done = False
 
@@ -535,6 +546,10 @@ def compare (name1, names2, custom_alignement, adj_inf, renumber, target_renum, 
                 name2 = alpha_rename(name2, modelData, model)
                 model = open(name2, "r")
                 modelData = analyze(name2)
+
+            if(delete):
+                if(target_delete != ""): custom_delete(target_done, name1, target_delete); targetData = analyze(name1)
+                if (name[0:len(name) - 4] in model_delete.keys()): custom_delete(False, name2, model_delete[name[0:len(name) - 4]]); modelData = analyze(name2)
 
             if(renumber):
                 if(custom_alignement):
@@ -600,6 +615,7 @@ def main(argv):
     parser.add_argument("-r", "--renumber_structures", action="store_true", help="Renumber chains")
 
     parser.add_argument("-c", "--custom_alignement", type=str, help="Custom renumbering", default=None)
+    parser.add_argument("-d", "--custom_removal", type=str, help="Custom deleting", default=None)
 
     args = parser.parse_args()
 
@@ -622,6 +638,7 @@ def main(argv):
     custom_renumbering = False
     custom_target_renum = ""
     custom_model_renum = {}
+
     if(not args.custom_alignement is None):
         custom_renumbering = True
         custom_renums = args.custom_alignement.split(";")
@@ -631,8 +648,21 @@ def main(argv):
                 custom_model_renum[name] = renum
             if(name == os.path.splitext(os.path.basename(args.target_path))[0]): custom_target_renum = renum
 
+    custom_delete = False
+    custom_target_delete = ""
+    custom_model_delete = {}
+
+    if(not args.custom_removal is None):
+        custom_delete = True
+        custom_deletes = args.custom_removal.split(";")
+        for delete in custom_deletes:
+            name, delete = delete.split("|")
+            if any(os.path.splitext(os.path.basename(path))[0] == name for path in files_to_compare):
+                custom_model_delete[name] = delete
+            if(name == os.path.splitext(os.path.basename(args.target_path))[0]): custom_target_delete = delete
+
     infs = compare(args.target_path, files_to_compare, custom_renumbering, args.adjust_inf,
-                   args.renumber_structures, custom_target_renum, custom_model_renum)
+                   args.renumber_structures, custom_target_renum, custom_model_renum, custom_delete, custom_target_delete, custom_model_delete)
     target_filename_without_ext = os.path.splitext(os.path.basename(args.target_path))[0]
     save_csv(os.path.join(os.path.dirname(args.target_path), '{}_ranking.csv'.format(target_filename_without_ext)),infs)
 
