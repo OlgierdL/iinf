@@ -121,3 +121,11 @@ model,score
 7qde#10,0.712
 7qde#2,0.632
 ```
+
+B) To experiment with both custom alignment and custom residue deletion at once, run ```run_complex_custom_alignment_test.sh```. Expected result for '7qde_ca' subdirectory is presented below:
+
+```
+model,score
+7qde#10,0.730
+7qde#2,0.730
+```
