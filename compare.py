@@ -330,6 +330,28 @@ def rna_tools_delete(filename, edit_command):
         subprocess.run(["bash", "-c", command])
 
 
+def delete_residues(filename, edit_command):
+    for chain_command in edit_command.split(","):
+        chain = chain_command[0]
+        start, end = chain_command.split('-')
+        end = int(end)
+        start = int(start[2:])
+        with open(filename, 'r') as file:
+            lines = file.readlines()
+
+        with open(filename, 'w') as file:
+            for line in lines:
+                if len(line) >= 32:
+                    if line[21] == chain:
+                        num_str = line[22:32].strip()
+                        try:
+                            num = int(num_str)
+                        except ValueError:
+                            continue
+                        if start <= num <= end:
+                            continue
+                file.write(line)
+
 def find_next_identifier(identifiers):
     alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     identifiers_set = set(identifiers)
@@ -461,7 +483,7 @@ def back_rename(modelData, name2, model):
 
 def custom_delete(done, name, delete):
     if (not done):
-        rna_tools_delete(name, delete)
+        delete_residues(name, delete)
 
 
 def custom_renum(done, name, file, renum):
@@ -567,6 +589,13 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
                 if (target_delete != ""): custom_delete(target_done, name1, target_delete); targetData = analyze(name1)
                 if (name[0:len(name) - 4] in model_delete.keys()): custom_delete(False, name2, model_delete[
                     name[0:len(name) - 4]]); modelData = analyze(name2)
+
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            dest_file = os.path.join(script_dir, name)
+            with open(dest_file, 'w') as f:
+                f.write(model.read())
+            print(f"Saved the file to {dest_file}")
+            model.seek(0)
 
             if (renumber):
                 if (custom_alignement):
@@ -688,6 +717,7 @@ def main(argv):
     target_filename_without_ext = os.path.splitext(os.path.basename(args.target_path))[0]
     save_csv(os.path.join(os.path.dirname(args.target_path), '{}_ranking.csv'.format(target_filename_without_ext)),
              infs)
+    print(infs)
 
 
 if __name__ == "__main__":
