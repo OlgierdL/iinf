@@ -15,8 +15,9 @@ import tempfile
 from pathlib import Path
 import csv
 
+
 def clear(file):
-    output_file = file[0:len(file)-4] + "_tmp_m" + file[len(file)-4:]
+    output_file = file[0:len(file) - 4] + "_tmp_m" + file[len(file) - 4:]
     with open(file, "r") as infile, open(output_file, "w") as outfile:
         no = None
         a = 0
@@ -81,10 +82,14 @@ def analyze(file):
             output[chain.id] = residues
             resnum_tot += residues_no
         output["residues_no"] = resnum_tot
-    if(output["Protein"] == " " and output["RNA"] != "T"): output["Protein"] = "T"
-    elif(output["Protein"] == " "): output["Protein"] = "S"
-    if (len(output["Protein"].split(",")) == 1): output["single_protein"] = True
-    else: output["single_protein"] = False
+    if (output["Protein"] == " " and output["RNA"] != "T"):
+        output["Protein"] = "T"
+    elif (output["Protein"] == " "):
+        output["Protein"] = "S"
+    if (len(output["Protein"].split(",")) == 1):
+        output["single_protein"] = True
+    else:
+        output["single_protein"] = False
     return output
 
 
@@ -93,22 +98,22 @@ def separateChains(file, chain_ids, single_chain):
         file.seek(0)
         for line in file:
             line_tmp = " ".join(line.split())
-            if(len(line_tmp.split()) >= 5):
+            if (len(line_tmp.split()) >= 5):
                 line_id = line_tmp.split()[4]
-                if((line_id in chain_ids or single_chain) and line_tmp.split()[0] == "ATOM"): chains.write(line)
+                if ((line_id in chain_ids or single_chain) and line_tmp.split()[0] == "ATOM"): chains.write(line)
 
 
 def rmsd(native_coords, model_coords, rot, tran):
     model_coords_rotated = np.dot(model_coords, rot) + tran
     diff = native_coords - model_coords_rotated
-    RMSD = np.sqrt(sum(sum(diff**2))/native_coords.shape[0])
+    RMSD = np.sqrt(sum(sum(diff ** 2)) / native_coords.shape[0])
     return RMSD
 
 
 def specific_align(aln_atoms, target, model):
     atom_types = ["CA", "N", "C", "O"]
     AA = ["ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "GLY", "HIS", "ILE", "LEU", "LYS", "MET", "PHE",
-                   "PRO", "SER", "THR", "TRP", "TYR", "VAL"]
+          "PRO", "SER", "THR", "TRP", "TYR", "VAL"]
     p = PDBParser(QUIET=True)
     native = p.get_structure("target", target)
     model = p.get_structure("model", model)
@@ -125,8 +130,10 @@ def specific_align(aln_atoms, target, model):
     si.set(native_coords[:percentage_to_aln], model_coords[:percentage_to_aln])
     si.run()
 
-    if(native_coords.shape == model_coords.shape): RMSD = rmsd(native_coords, model_coords, si.rot, si.tran)
-    else: RMSD = -1
+    if (native_coords.shape == model_coords.shape):
+        RMSD = rmsd(native_coords, model_coords, si.rot, si.tran)
+    else:
+        RMSD = -1
     return [si, RMSD]
 
 
@@ -140,14 +147,15 @@ def get_mapping(targetData, modelData, target, model):
     rmsds = {}
     for id1 in targetData["Protein"].split(","):
         for id2 in modelData["Protein"].split(","):
-            rmsd_value = specific_align(1, "tmp/" + targetData["RNA"] + id1 + ".pdb", "tmp/" + modelData["RNA"] + id2 + ".pdb")[1]
+            rmsd_value = \
+            specific_align(1, "tmp/" + targetData["RNA"] + id1 + ".pdb", "tmp/" + modelData["RNA"] + id2 + ".pdb")[1]
             rmsds[id1 + ":" + id2] = rmsd_value
 
     rmsds = dict(sorted(rmsds.items(), key=lambda x: x[1]))
     matched = []
     mapping = []
     for key in rmsds.keys():
-        if(key[0] not in [match[0] for match in mapping] and key[2] not in [match[2] for match in mapping]):
+        if (key[0] not in [match[0] for match in mapping] and key[2] not in [match[2] for match in mapping]):
             mapping.append(key)
     chains_mapping_target = ""
     for pair in mapping:
@@ -184,11 +192,12 @@ def filter_pairs(file, rna_chains):
     a = []
     dna_str = ["DT", "DA", "DC", "DG"]
     rna_str = ["A", "C", "G", "U"]
-    protein_str = ["ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "GLY", "HIS", "ILE", "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", "TRP", "TYR", "VAL"]
+    protein_str = ["ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "GLY", "HIS", "ILE", "LEU", "LYS", "MET", "PHE",
+                   "PRO", "SER", "THR", "TRP", "TYR", "VAL"]
     dna_dict = setDict(dna_str)
     rna_dict = setDict(rna_str)
     protein_dict = setDict(protein_str)
-    i=0
+    i = 0
     file.seek(0)
     for line in file:
         line.strip()
@@ -209,10 +218,13 @@ def filter_pairs(file, rna_chains):
             name_d = donor[6:9].strip()
             name_a = acceptor[6:9].strip()
 
-            if (name_d[0] != "HOH" and name_a != "HOH") and\
-            (len(rna_chains) == 0 or (len(rna_chains) > 0 and (rna_chains.find(chain_d) >= 0 or rna_chains.find(chain_a) >= 0))) and\
-            (name_d in rna_dict.keys() or name_a in rna_dict.keys()) and \
-            not ((name_d in protein_dict.keys() and name_a in protein_dict.keys()) or (name_d in dna_dict.keys() and name_a in dna_dict.keys() > 0) or (name_d in rna_dict.keys() and name_a in rna_dict.keys())):
+            if (name_d[0] != "HOH" and name_a != "HOH") and \
+                    (len(rna_chains) == 0 or (len(rna_chains) > 0 and (
+                            rna_chains.find(chain_d) >= 0 or rna_chains.find(chain_a) >= 0))) and \
+                    (name_d in rna_dict.keys() or name_a in rna_dict.keys()) and \
+                    not ((name_d in protein_dict.keys() and name_a in protein_dict.keys()) or (
+                            name_d in dna_dict.keys() and name_a in dna_dict.keys() > 0) or (
+                                 name_d in rna_dict.keys() and name_a in rna_dict.keys())):
                 don_id = getid(donor)
                 acc_id = getid(acceptor)
                 don_tmp1 = don_id[0:2]
@@ -284,18 +296,18 @@ def get_inf(target, model):
     fn = 0
 
     for k in range(i):
-        if(target[k] in model_dict):
+        if (target[k] in model_dict):
             tp += 1
         else:
             fn += 1
     fp = 0
     for k in range(j):
-        if(not (model[k] in target_dict)):
+        if (not (model[k] in target_dict)):
             fp += 1
 
-    ppv = tp / (tp+fp)
-    tpr = tp / (tp+fn)
-    inf = math.sqrt(ppv*tpr)
+    ppv = tp / (tp + fp)
+    tpr = tp / (tp + fn)
+    inf = math.sqrt(ppv * tpr)
 
     return inf
 
@@ -309,13 +321,13 @@ def convert_to_wsl_path(path):
 
 def rna_tools_renumerate(filename, output_file, edit_command):
     command = f'rna_pdb_tools.py --edit \'{edit_command}\' {filename} > {output_file}'
-    subprocess.run(["bash", "-i", "-c", command])
+    subprocess.run(["bash", "-c", command])
 
 
 def rna_tools_delete(filename, edit_command):
     for chain in edit_command.split(","):
         command = f'rna_pdb_tools.py --delete \'{chain}\' --inplace {filename}'
-        subprocess.run(["bash", "-i", "-c", command])
+        subprocess.run(["bash", "-c", command])
 
 
 def find_next_identifier(identifiers):
@@ -345,7 +357,8 @@ def auto_renumber(filename, chains, output):
         fragments = find_fragments(filename, chain)
         chain_mapping = []
         for fragment in fragments:
-            fragment_mapping = chain + ":" + str(fragment[0]) + "-" + str(fragment[1]) + ">" + chain + ":" + str(i) + "-" + str(fragment[1] - fragment[0] + i)
+            fragment_mapping = chain + ":" + str(fragment[0]) + "-" + str(fragment[1]) + ">" + chain + ":" + str(
+                i) + "-" + str(fragment[1] - fragment[0] + i)
             chain_mapping.append(fragment_mapping)
             i = fragment[1] - fragment[0] + i + 1
         command.append(",".join(chain_mapping))
@@ -359,17 +372,17 @@ def find_fragments(filename, chain):
         for line in file:
             line_tmp = " ".join(line.split())
             if (line_tmp.split()[0] == "ATOM" and line_tmp.split()[4] == chain):
-                if(len(numbers) == 0):
+                if (len(numbers) == 0):
                     i = line_tmp.split()[5]
                     numbers.append(int(line_tmp.split()[5]))
-                if(line_tmp.split()[5] != i): numbers.append(int(line_tmp.split()[5]))
+                if (line_tmp.split()[5] != i): numbers.append(int(line_tmp.split()[5]))
                 i = line_tmp.split()[5]
-        if(len(numbers) > 0): fragments = [[numbers[0]]]
+        if (len(numbers) > 0): fragments = [[numbers[0]]]
         for i in range(1, len(numbers)):
-            if(numbers[i] > numbers[i-1] + 1):
-                fragments[len(fragments)-1].append(numbers[i-1])
+            if (numbers[i] > numbers[i - 1] + 1):
+                fragments[len(fragments) - 1].append(numbers[i - 1])
                 fragments.append([numbers[i]])
-        fragments[len(fragments)-1].append(numbers[len(numbers)-1])
+        fragments[len(fragments) - 1].append(numbers[len(numbers) - 1])
         return fragments
 
 
@@ -402,7 +415,7 @@ def copy_file_to_script_directory(source_path):
     return True
 
 
-def save_csv(result_file_path,data):
+def save_csv(result_file_path, data):
     with open(result_file_path, 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerows(data)
@@ -421,7 +434,7 @@ def single_chain_rename(name2, modelData, model):
     add_protein_chain_identifier(name2, output_file, modelData["RNA"])
     model.close()
     os.remove(name2)
-    new_name = name2[0:len(name2)-4] + "_id" + name2[len(name2)-4:]
+    new_name = name2[0:len(name2) - 4] + "_id" + name2[len(name2) - 4:]
     return new_name
 
 
@@ -430,7 +443,7 @@ def alpha_rename(name2, modelData, model):
     rep = modelData["RNA"] + ">" + id
     output = name2[0:len(name2) - 4] + "_t" + name2[len(name2) - 4:]
     command = f'rna_pdb_tools.py --rename-chain \'{rep}\' {name2} > {output}'
-    subprocess.run(["bash", "-i", "-c", command])
+    subprocess.run(["bash", "-c", command])
     model.close()
     os.remove(name2)
     return output
@@ -440,19 +453,19 @@ def back_rename(modelData, name2, model):
     rep = modelData["RNA"] + ">" + "0"
     output = name2[0:len(name2) - 4] + "_t" + name2[len(name2) - 4:]
     command = f'rna_pdb_tools.py --rename-chain \'{rep}\' {name2} > {output}'
-    subprocess.run(["bash", "-i", "-c", command])
+    subprocess.run(["bash", "-c", command])
     model.close()
     os.remove(name2)
     return output
 
 
 def custom_delete(done, name, delete):
-    if(not done):
+    if (not done):
         rna_tools_delete(name, delete)
 
 
 def custom_renum(done, name, file, renum):
-    if(not done):
+    if (not done):
         rna_tools_renumerate(name, name[0:len(name) - 4] + "_cus" + name[len(name) - 4:], renum)
         file.close()
         os.remove(name)
@@ -460,6 +473,7 @@ def custom_renum(done, name, file, renum):
         new_file = open(new_name, "r")
         return new_file, new_name
     return file, name
+
 
 def auto_renum(data, done, name, file):
     to_renum = []
@@ -470,7 +484,8 @@ def auto_renum(data, done, name, file):
             renumber = True
             to_renum.append(data[id][0])
 
-    if ((data[data["RNA"]][2] - data[data["RNA"]][1] + 1 != data[data["RNA"]][3]) or data[data["RNA"]][1] != 1 and not done):
+    if ((data[data["RNA"]][2] - data[data["RNA"]][1] + 1 != data[data["RNA"]][3]) or data[data["RNA"]][
+        1] != 1 and not done):
         renumber = True
         to_renum.append(data[data["RNA"]][0])
 
@@ -511,7 +526,8 @@ def shorten_for_output(input_string):
     return part_until_tmp
 
 
-def compare (name1, names2, custom_alignement, adj_inf, renumber, target_renum, model_renum, delete, target_delete, model_delete):
+def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, model_renum, delete, target_delete,
+            model_delete):
     infs = []
     target_done = False
 
@@ -524,20 +540,20 @@ def compare (name1, names2, custom_alignement, adj_inf, renumber, target_renum, 
         names_copied = copy_to_tmp(tmpdir, names2)
         for name in names_copied:
             name2 = os.path.join(tmpdir, name)
-            if(not target_done):
+            if (not target_done):
                 name1 = os.path.join(tmpdir, name1_basename)
             target = open(name1, "r")
             model = open(name2, "r")
             clear(name2)
             model.close()
             os.remove(name2)
-            name2 = name2[0:len(name2)-4] + "_tmp_m" + name2[len(name2)-4:]
+            name2 = name2[0:len(name2) - 4] + "_tmp_m" + name2[len(name2) - 4:]
             model = open(name2, "r")
 
-            if(not target_done): targetData = analyze(name1)
+            if (not target_done): targetData = analyze(name1)
             modelData = analyze(name2)
 
-            if(modelData["single_protein"] == True):
+            if (modelData["single_protein"] == True):
                 name2 = single_chain_rename(name2, modelData, model)
                 model = open(name2, "r")
                 modelData = analyze(name2)
@@ -547,14 +563,20 @@ def compare (name1, names2, custom_alignement, adj_inf, renumber, target_renum, 
                 model = open(name2, "r")
                 modelData = analyze(name2)
 
-            if(delete):
-                if(target_delete != ""): custom_delete(target_done, name1, target_delete); targetData = analyze(name1)
-                if (name[0:len(name) - 4] in model_delete.keys()): custom_delete(False, name2, model_delete[name[0:len(name) - 4]]); modelData = analyze(name2)
+            if (delete):
+                if (target_delete != ""): custom_delete(target_done, name1, target_delete); targetData = analyze(name1)
+                if (name[0:len(name) - 4] in model_delete.keys()): custom_delete(False, name2, model_delete[
+                    name[0:len(name) - 4]]); modelData = analyze(name2)
 
-            if(renumber):
-                if(custom_alignement):
-                    if(target_renum != ""): target, name1 = custom_renum(target_done, name1, target, target_renum); targetData = analyze(name1)
-                    if(name[0:len(name)-4] in model_renum.keys()): model, name2 = custom_renum(False, name2, model, model_renum[name[0:len(name)-4]]); modelData = analyze(name2)
+            if (renumber):
+                if (custom_alignement):
+                    if (target_renum != ""): target, name1 = custom_renum(target_done, name1, target,
+                                                                          target_renum); targetData = analyze(name1)
+                    if (name[0:len(name) - 4] in model_renum.keys()): model, name2 = custom_renum(False, name2, model,
+                                                                                                  model_renum[name[
+                                                                                                              0:len(
+                                                                                                                  name) - 4]]); modelData = analyze(
+                        name2)
                 else:
                     target, name1 = auto_renum(targetData, target_done, name1, target)
                     model, name2 = auto_renum(modelData, False, name2, model)
@@ -565,21 +587,21 @@ def compare (name1, names2, custom_alignement, adj_inf, renumber, target_renum, 
             if (not target_done): target_done = True
 
         hb2_dict, target_HB2 = run_hbplus(tmpdir, name1)
-        
+
         for model in hb2_dict.keys():
             model_HB2 = open(os.path.join(tmpdir, model), "r")
 
             os.makedirs("tmp_chains", exist_ok=True)
 
             chains_mapping_model = modelData["RNA"] + ":" + targetData["RNA"]
-            
+
             target_mappings = create_combinations(targetData["Protein"].split(","), modelData["Protein"].split(","))
-            
+
             inf = get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2)
-            
+
             model_HB2.close()
 
-            if(adj_inf):
+            if (adj_inf):
                 inf = inf * modelData["residues_no"] / targetData["residues_no"]
                 hb2_dict[model] = inf
                 model_name = shorten_for_output(model)
@@ -606,7 +628,6 @@ def compare (name1, names2, custom_alignement, adj_inf, renumber, target_renum, 
 
 
 def main(argv):
-
     parser = argparse.ArgumentParser(description="Compare model and target.")
     parser.add_argument("--target_path", type=str, help="target", required=True)
     parser.add_argument("--model_path", type=str, help="model", required=True)
@@ -639,32 +660,34 @@ def main(argv):
     custom_target_renum = ""
     custom_model_renum = {}
 
-    if(not args.custom_alignement is None):
+    if (not args.custom_alignement is None):
         custom_renumbering = True
         custom_renums = args.custom_alignement.split(";")
         for renum in custom_renums:
             name, renum = renum.split("|")
             if any(os.path.splitext(os.path.basename(path))[0] == name for path in files_to_compare):
                 custom_model_renum[name] = renum
-            if(name == os.path.splitext(os.path.basename(args.target_path))[0]): custom_target_renum = renum
+            if (name == os.path.splitext(os.path.basename(args.target_path))[0]): custom_target_renum = renum
 
     custom_delete = False
     custom_target_delete = ""
     custom_model_delete = {}
 
-    if(not args.custom_removal is None):
+    if (not args.custom_removal is None):
         custom_delete = True
         custom_deletes = args.custom_removal.split(";")
         for delete in custom_deletes:
             name, delete = delete.split("|")
             if any(os.path.splitext(os.path.basename(path))[0] == name for path in files_to_compare):
                 custom_model_delete[name] = delete
-            if(name == os.path.splitext(os.path.basename(args.target_path))[0]): custom_target_delete = delete
+            if (name == os.path.splitext(os.path.basename(args.target_path))[0]): custom_target_delete = delete
 
     infs = compare(args.target_path, files_to_compare, custom_renumbering, args.adjust_inf,
-                   args.renumber_structures, custom_target_renum, custom_model_renum, custom_delete, custom_target_delete, custom_model_delete)
+                   args.renumber_structures, custom_target_renum, custom_model_renum, custom_delete,
+                   custom_target_delete, custom_model_delete)
     target_filename_without_ext = os.path.splitext(os.path.basename(args.target_path))[0]
-    save_csv(os.path.join(os.path.dirname(args.target_path), '{}_ranking.csv'.format(target_filename_without_ext)),infs)
+    save_csv(os.path.join(os.path.dirname(args.target_path), '{}_ranking.csv'.format(target_filename_without_ext)),
+             infs)
 
 
 if __name__ == "__main__":
