@@ -134,6 +134,6 @@ B) To experiment with both custom alignment and custom residue deletion at once,
 
 ```
 model,score
-7qde#10,0.730
+7qde#10,0.816
 7qde#2,0.730
 ```
