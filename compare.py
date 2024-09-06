@@ -14,6 +14,7 @@ from itertools import permutations
 import tempfile
 from pathlib import Path
 import csv
+from itertools import product
 
 
 def clear(file):
@@ -358,6 +359,10 @@ def find_next_identifier(identifiers):
     for letter in alphabet:
         if letter not in identifiers_set:
             return letter
+    for letters in product(alphabet, repeat=2):
+        identifier = ''.join(letters)
+        if identifier not in identifiers_set:
+            return identifier
 
 
 def add_protein_chain_identifier(input_file, output_file, rna_id):
