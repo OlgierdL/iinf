@@ -629,11 +629,10 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
             model_HB2.close()
 
             if (adj_inf):
-                inf = inf * modelData["residues_no"] / targetData["residues_no"]
+                inf = inf * modelData["residues_no"] / targetData["residues_no"] 
                 hb2_dict[model] = inf
                 model_name = shorten_for_output(model)
                 infs.append([model_name, format(hb2_dict[model], ".3f")])
-
             else:
                 hb2_dict[model] = inf
                 model_name = shorten_for_output(model)
@@ -713,8 +712,8 @@ def main(argv):
                    args.renumber_structures, custom_target_renum, custom_model_renum, custom_delete,
                    custom_target_delete, custom_model_delete)
     target_filename_without_ext = os.path.splitext(os.path.basename(args.target_path))[0]
-    save_csv(os.path.join(os.path.dirname(args.target_path), '{}_ranking.csv'.format(target_filename_without_ext)),
-             infs)
+    sorted_infs = [infs[0]] + sorted(infs[1:], key=lambda x: x[1], reverse=True)
+    save_csv(os.path.join(os.path.dirname(args.target_path), '{}_ranking.csv'.format(target_filename_without_ext)), sorted_infs)
 
 
 if __name__ == "__main__":
