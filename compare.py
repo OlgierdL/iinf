@@ -268,7 +268,10 @@ def get_pairs(file, rna_chains, mapping):
     sorted_pairs = sorted(pairs, key=lambda x: (x.split()[0], int(x.split()[1])))
     replaced_pairs = []
     for pair in sorted_pairs:
-        replaced_pairs.append(replace_chains(pair, mapping))
+        if mapping != None:
+            replaced_pairs.append(replace_chains(pair, mapping.split(',')))
+        else:
+            replaced_pairs.append(pair)
     for pair in replaced_pairs:
         parts = pair.split()
         a = parts[0] + parts[1]
@@ -321,7 +324,7 @@ def convert_to_wsl_path(path):
 
 
 def rna_tools_renumerate(filename, output_file, edit_command):
-    command = f'rna_pdb_tools.py --edit \'{edit_command}\' {filename} > {output_file}'
+    command = f'rna_pdb_tools.py --keep-hetatm --edit \'{edit_command}\' {filename} > {output_file}'
     subprocess.run(["bash", "-c", command])
 
 
@@ -524,21 +527,68 @@ def auto_renum(data, done, name, file):
         new_file = open(new_name, "r")
         return new_file, new_name
     return file, name
-
+    
+def get_chains(target_mappings, chains_mapping_model, is_target):
+    result = ''
+    for mapping in target_mappings:
+        target_chains = mapping.split(':')
+        if len(result)>0:
+            result = result + ','
+        if (is_target):
+            result = result + target_chains[0]
+        else:
+            result = result + target_chains[1]
+    if is_target:
+        model_chains = chains_mapping_model.split(':')[0].split(',')
+    else:
+        model_chains = chains_mapping_model.split(':')[1].split(',')
+    for mapping in model_chains:
+        if len(result)>0:
+           result = result + ','
+        result = result + mapping
+    return result
+    
+def get_mapping(target_mappings, chains_mapping_model, is_target):
+    result = ''
+    for mapping in target_mappings:
+        chains = mapping.split(':')
+        if chains[0] != chains[1]:
+            if len(result)>0:
+                result = result + ','
+            if is_target:
+                result = result + mapping
+            else:
+                result = result + mapping[::-1]
+    target_chains = chains_mapping_model.split(':')[0].split(',')
+    model_chains = chains_mapping_model.split(':')[1].split(',')
+    if len(target_chains) == len(model_chains):
+        for i in range(len(target_chains)):
+            if (target_chains[i] != model_chains[i]):
+                if len(result)>0:
+                    result = result + ','
+                if (is_target):
+                    result = result + model_chains[i] + ':' + target_chains[i]
+                else:
+                    result = result + target_chains[i] + ':' + model_chains[i]
+    if len(result)>0:
+        return result
+    return None
 
 def get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2):
     max_inf = 0
-    for mapping in target_mappings:
-        target_pairs = get_pairs(target_HB2, "A", mapping.split(","))
-        model_pairs = get_pairs(model_HB2, "0", chains_mapping_model.split(","))
-        if (len(model_pairs) == 0):
-            pass
-        elif (len(target_pairs) == 0):
-            pass
-        else:
-            inf = get_inf(target_pairs, model_pairs)
-            if (inf > max_inf):
-                max_inf = inf
+    target_chains = get_chains(target_mappings, chains_mapping_model, True)
+    model_chains = get_chains(target_mappings, chains_mapping_model, False)
+    model_mapping = get_mapping(target_mappings, chains_mapping_model, False)
+    target_pairs = get_pairs(target_HB2, target_chains, None)
+    model_pairs = get_pairs(model_HB2, model_chains, model_mapping)
+    if (len(model_pairs) == 0):
+        pass
+    elif (len(target_pairs) == 0):
+        pass
+    else:
+        inf = get_inf(target_pairs, model_pairs)
+        if (inf > max_inf):
+            max_inf = inf
     return max_inf
 
 
