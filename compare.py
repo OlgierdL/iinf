@@ -149,7 +149,8 @@ def get_mapping(targetData, modelData, target, model):
     for id1 in targetData["Protein"].split(","):
         for id2 in modelData["Protein"].split(","):
             rmsd_value = \
-            specific_align(1, "tmp/" + targetData["RNA"] + id1 + ".pdb", "tmp/" + modelData["RNA"] + id2 + ".pdb")[1]
+                specific_align(1, "tmp/" + targetData["RNA"] + id1 + ".pdb", "tmp/" + modelData["RNA"] + id2 + ".pdb")[
+                    1]
             rmsds[id1 + ":" + id2] = rmsd_value
 
     rmsds = dict(sorted(rmsds.items(), key=lambda x: x[1]))
@@ -356,6 +357,7 @@ def delete_residues(filename, edit_command):
                             continue
                 file.write(line)
 
+
 def find_next_identifier(identifiers):
     alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     identifiers_set = set(identifiers)
@@ -527,12 +529,13 @@ def auto_renum(data, done, name, file):
         new_file = open(new_name, "r")
         return new_file, new_name
     return file, name
-    
+
+
 def get_chains(target_mappings, chains_mapping_model, is_target):
     result = ''
     for mapping in target_mappings:
         target_chains = mapping.split(':')
-        if len(result)>0:
+        if len(result) > 0:
             result = result + ','
         if (is_target):
             result = result + target_chains[0]
@@ -543,42 +546,42 @@ def get_chains(target_mappings, chains_mapping_model, is_target):
     else:
         model_chains = chains_mapping_model.split(':')[1].split(',')
     for mapping in model_chains:
-        if len(result)>0:
-           result = result + ','
+        if len(result) > 0:
+            result = result + ','
         result = result + mapping
     return result
-    
-def get_mapping(target_mappings, chains_mapping_model, is_target):
+
+
+def get_mapping(is_target, model_chains_protein, target_chains_protein, model_chains_rna, target_chains_rna):
     result = ''
-    for mapping in target_mappings:
-        chains = mapping.split(':')
-        if chains[0] != chains[1]:
-            if len(result)>0:
-                result = result + ','
-            if is_target:
-                result = result + mapping
-            else:
-                result = result + mapping[::-1]
-    target_chains = chains_mapping_model.split(':')[0].split(',')
-    model_chains = chains_mapping_model.split(':')[1].split(',')
-    if len(target_chains) == len(model_chains):
-        for i in range(len(target_chains)):
-            if (target_chains[i] != model_chains[i]):
-                if len(result)>0:
+    for i in range(len(target_chains_protein)):
+        if(len(model_chains_protein) > i):
+            if (target_chains_protein[i] != model_chains_protein[i]):
+                if len(result) > 0:
                     result = result + ','
                 if (is_target):
-                    result = result + model_chains[i] + ':' + target_chains[i]
+                    result = result + target_chains_protein[i] + ':' + model_chains_protein[i]
                 else:
-                    result = result + target_chains[i] + ':' + model_chains[i]
-    if len(result)>0:
+                    result = result + model_chains_protein[i] + ':' + target_chains_protein[i]
+    for i in range(len(target_chains_rna)):
+        if(len(model_chains_rna) > i):
+            if (target_chains_rna[i] != model_chains_rna[i]):
+                if len(result) > 0:
+                    result = result + ','
+                if (is_target):
+                    result = result + target_chains_rna[i] + ':' + model_chains_rna[i]
+                else:
+                    result = result + model_chains_rna[i] + ':' + target_chains_rna[i]
+    if len(result) > 0:
         return result
     return None
 
-def get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2):
+
+def get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2, modelData, targetData):
     max_inf = 0
-    target_chains = get_chains(target_mappings, chains_mapping_model, True)
-    model_chains = get_chains(target_mappings, chains_mapping_model, False)
-    model_mapping = get_mapping(target_mappings, chains_mapping_model, False)
+    model_chains = modelData["RNA"] + "," + modelData["Protein"]
+    target_chains = targetData["RNA"] + "," + targetData["Protein"]
+    model_mapping = get_mapping(False, modelData["Protein"], targetData["Protein"], modelData["RNA"], targetData["RNA"])
     target_pairs = get_pairs(target_HB2, target_chains, None)
     model_pairs = get_pairs(model_HB2, model_chains, model_mapping)
     if (len(model_pairs) == 0):
@@ -674,12 +677,12 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
 
             target_mappings = create_combinations(targetData["Protein"].split(","), modelData["Protein"].split(","))
 
-            inf = get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2)
+            inf = get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2, modelData, targetData)
 
             model_HB2.close()
 
             if (adj_inf):
-                inf = inf * modelData["residues_no"] / targetData["residues_no"] 
+                inf = inf * modelData["residues_no"] / targetData["residues_no"]
                 hb2_dict[model] = inf
                 model_name = shorten_for_output(model)
                 infs.append([model_name, format(hb2_dict[model], ".3f")])
@@ -763,7 +766,8 @@ def main(argv):
                    custom_target_delete, custom_model_delete)
     target_filename_without_ext = os.path.splitext(os.path.basename(args.target_path))[0]
     sorted_infs = [infs[0]] + sorted(infs[1:], key=lambda x: x[1], reverse=True)
-    save_csv(os.path.join(os.path.dirname(args.target_path), '{}_ranking.csv'.format(target_filename_without_ext)), sorted_infs)
+    save_csv(os.path.join(os.path.dirname(args.target_path), '{}_ranking.csv'.format(target_filename_without_ext)),
+             sorted_infs)
 
 
 if __name__ == "__main__":
