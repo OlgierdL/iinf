@@ -15,6 +15,7 @@ import tempfile
 from pathlib import Path
 import csv
 from itertools import product
+import re
 
 
 def clear(file):
@@ -347,8 +348,8 @@ def delete_residues(filename, edit_command):
         with open(filename, 'w') as file:
             for line in lines:
                 if len(line) >= 32:
-                    if line[21] == chain:
-                        num_str = line[22:32].strip()
+                    if line[20:23].strip() == chain:
+                        num_str = line[23:32].strip()
                         try:
                             num = int(num_str)
                         except ValueError:
@@ -356,6 +357,48 @@ def delete_residues(filename, edit_command):
                         if start <= num <= end:
                             continue
                 file.write(line)
+
+def renumber_residues(filename, output_file, edit_command):
+    for chain_command in edit_command.split(","):
+
+        original, renumber = chain_command.split('>')
+        og_chain_id = original[0]
+        ren_chain_id = renumber[0]
+        og_start, og_end = original.split('-')
+        og_end = int(og_end)
+        og_start = int(og_start[2:])
+        ren_start, ren_end = renumber.split('-')
+        ren_start = int(ren_start[2:])
+
+        with open(filename, 'r') as file:
+            lines = file.readlines()
+        with open(filename, 'r') as file:
+            file.seek(0)
+            renum_index = ren_start
+            last_num = og_start
+            for i, line in enumerate(lines):
+                if len(line) >= 32:
+                    if line[20:23].strip() == og_chain_id:
+                        num_str = line[23:32].strip()
+                        match = re.match(r'^([0-9]+)([a-zA-Z]*)$', num_str)
+                        if match:
+                            num = match.group(1).strip()
+                            letters = match.group(2).strip()
+                        try:
+                            num = int(num)
+                        except ValueError:
+                            continue
+                        if og_start <= num <= og_end:
+                            if (last_num != num):
+                                renum_index += 1
+                            spaces1 = str(((" ") * (4 - len(str(renum_index)))))
+                            spaces2 = (" ") * (6 - len(letters))
+                            new_line = line[:21] + ren_chain_id + spaces1 + str(renum_index) + letters + spaces2 + line[32:]
+                            last_num = num
+                            lines[i] = new_line
+            with open(filename, 'w') as file:
+                file.writelines(lines)
+
 
 
 def find_next_identifier(identifiers):
@@ -498,13 +541,7 @@ def custom_delete(done, name, delete):
 
 def custom_renum(done, name, file, renum):
     if (not done):
-        rna_tools_renumerate(name, name[0:len(name) - 4] + "_cus" + name[len(name) - 4:], renum)
-        file.close()
-        os.remove(name)
-        new_name = name[0:len(name) - 4] + "_cus" + name[len(name) - 4:]
-        new_file = open(new_name, "r")
-        return new_file, new_name
-    return file, name
+        renumber_residues(name, name[0:len(name) - 4] + "_cus" + name[len(name) - 4:], renum)
 
 
 def auto_renum(data, done, name, file):
@@ -638,10 +675,6 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
                 model = open(name2, "r")
                 modelData = analyze(name2)
 
-            if (not modelData["RNA"].isalpha()):
-                name2 = alpha_rename(name2, modelData, model)
-                model = open(name2, "r")
-                modelData = analyze(name2)
 
             if (delete):
                 if (target_delete != ""): custom_delete(target_done, name1, target_delete); targetData = analyze(name1)
@@ -650,9 +683,9 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
 
             if (renumber):
                 if (custom_alignement):
-                    if (target_renum != ""): target, name1 = custom_renum(target_done, name1, target,
+                    if (target_renum != ""): custom_renum(target_done, name1, target,
                                                                           target_renum); targetData = analyze(name1)
-                    if (name[0:len(name) - 4] in model_renum.keys()): model, name2 = custom_renum(False, name2, model,
+                    if (name[0:len(name) - 4] in model_renum.keys()): custom_renum(False, name2, model,
                                                                                                   model_renum[name[
                                                                                                               0:len(
                                                                                                                   name) - 4]]); modelData = analyze(
@@ -661,9 +694,6 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
                     target, name1 = auto_renum(targetData, target_done, name1, target)
                     model, name2 = auto_renum(modelData, False, name2, model)
 
-            name2 = back_rename(modelData, name2, model)
-            model = open(name2, "r")
-            modelData = analyze(name2)
             if (not target_done): target_done = True
 
         hb2_dict, target_HB2 = run_hbplus(tmpdir, name1)
