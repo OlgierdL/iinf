@@ -191,7 +191,7 @@ def remove_leading_0s(s: str) -> str:
     return s.lstrip("0") or "0"
 
 
-def filter_pairs(file, rna_chains):
+def filter_pairs(file, rna_chains, protein_chains):
     a = []
     dna_str = ["DT", "DA", "DC", "DG"]
     rna_str = ["A", "C", "G", "U"]
@@ -211,12 +211,8 @@ def filter_pairs(file, rna_chains):
             acceptor = line[14:23]
 
             chain_d = donor[0].strip()
-            if (chain_d == "-"):
-                chain_d = "A"
 
             chain_a = acceptor[0].strip()
-            if (chain_a == "-"):
-                chain_a = "A"
 
             name_d = donor[6:9].strip()
             name_a = acceptor[6:9].strip()
@@ -225,9 +221,9 @@ def filter_pairs(file, rna_chains):
                     (len(rna_chains) == 0 or (len(rna_chains) > 0 and (
                             rna_chains.find(chain_d) >= 0 or rna_chains.find(chain_a) >= 0))) and \
                     (name_d in rna_dict.keys() or name_a in rna_dict.keys()) and \
-                    not ((name_d in protein_dict.keys() and name_a in protein_dict.keys()) or (
+                    not ((chain_d in protein_chains.split(",") and chain_a in protein_chains.split(",")) or (
                             name_d in dna_dict.keys() and name_a in dna_dict.keys() > 0) or (
-                                 name_d in rna_dict.keys() and name_a in rna_dict.keys())):
+                                 chain_d in rna_chains.split(",") and chain_a in rna_chains.split(","))):
                 don_id = getid(donor)
                 acc_id = getid(acceptor)
                 don_tmp1 = don_id[0:2]
@@ -265,8 +261,8 @@ def replace_chains(line, mapping):
     return (" ".join(fields))
 
 
-def get_pairs(file, rna_chains, mapping):
-    pairs = filter_pairs(file, rna_chains)
+def get_pairs(file, rna_chains, protein_chains, mapping):
+    pairs = filter_pairs(file, rna_chains, protein_chains)
     sorted_pairs = sorted(pairs, key=lambda x: (x.split()[0], int(x.split()[1])))
     replaced_pairs = []
     for pair in sorted_pairs:
@@ -362,13 +358,22 @@ def renumber_residues(filename, output_file, edit_command):
     for chain_command in edit_command.split(","):
 
         original, renumber = chain_command.split('>')
-        og_chain_id = original[0]
-        ren_chain_id = renumber[0]
-        og_start, og_end = original.split('-')
-        og_end = int(og_end)
-        og_start = int(og_start[2:])
-        ren_start, ren_end = renumber.split('-')
-        ren_start = int(ren_start[2:])
+        if(original[2] != "-" and renumber[2] != "-"):
+            og_chain_id = original[0]
+            ren_chain_id = renumber[0]
+            og_start, og_end = original.split('-')
+            og_end = int(og_end)
+            og_start = int(og_start[2:])
+            ren_start, ren_end = renumber.split('-')
+            ren_start = int(ren_start[2:])
+        else:
+            og_chain_id = original[0]
+            ren_chain_id = renumber[0]
+            og_start, og_end = original.split('.')
+            og_end = int(og_end)
+            og_start = int(og_start[2:])
+            ren_start, ren_end = renumber.split('.')
+            ren_start = int(ren_start[2:])
 
         with open(filename, 'r') as file:
             lines = file.readlines()
@@ -380,7 +385,7 @@ def renumber_residues(filename, output_file, edit_command):
                 if len(line) >= 32:
                     if line[20:23].strip() == og_chain_id:
                         num_str = line[23:32].strip()
-                        match = re.match(r'^([0-9]+)([a-zA-Z]*)$', num_str)
+                        match = re.match(r'^(-?[0-9]+)([a-zA-Z]*)$', num_str)
                         if match:
                             num = match.group(1).strip()
                             letters = match.group(2).strip()
@@ -438,7 +443,7 @@ def auto_renumber(filename, chains, output):
             i = fragment[1] - fragment[0] + i + 1
         command.append(",".join(chain_mapping))
     edit_command = ",".join(command)
-    rna_tools_renumerate(filename, output, edit_command)
+    renumber_residues(filename, output, edit_command)
 
 
 def find_fragments(filename, chain):
@@ -544,6 +549,18 @@ def custom_renum(done, name, file, renum):
         renumber_residues(name, name[0:len(name) - 4] + "_cus" + name[len(name) - 4:], renum)
 
 
+def remove_om(file_path):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+    for i in range(len(lines)):
+        if len(lines[i]) >= 19:
+            substring = lines[i][17:20]
+            if substring in ["OMU", "OMG", "OMC", "OMA"]:
+                lines[i] = lines[i][:17] + "  " + lines[i][19:]
+    with open(file_path, 'w') as file:
+        file.writelines(lines)
+
+
 def auto_renum(data, done, name, file):
     to_renum = []
     renumber = False
@@ -553,19 +570,13 @@ def auto_renum(data, done, name, file):
             renumber = True
             to_renum.append(data[id][0])
 
-    if ((data[data["RNA"]][2] - data[data["RNA"]][1] + 1 != data[data["RNA"]][3]) or data[data["RNA"]][
-        1] != 1 and not done):
-        renumber = True
-        to_renum.append(data[data["RNA"]][0])
+    for id in data["RNA"].split(","):
+        if (data[id][2] - data[id][1] + 1 != data[id][3] or data[id][1] != 1 and not done):
+            renumber = True
+            to_renum.append(data[id][0])
 
     if (renumber):
         auto_renumber(name, to_renum, name[0:len(name) - 4] + "_ren" + name[len(name) - 4:])
-        file.close()
-        os.remove(name)
-        new_name = name[0:len(name) - 4] + "_ren" + name[len(name) - 4:]
-        new_file = open(new_name, "r")
-        return new_file, new_name
-    return file, name
 
 
 def get_chains(target_mappings, chains_mapping_model, is_target):
@@ -619,8 +630,8 @@ def get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2, mo
     model_chains = modelData["RNA"] + "," + modelData["Protein"]
     target_chains = targetData["RNA"] + "," + targetData["Protein"]
     model_mapping = get_mapping(False, modelData["Protein"], targetData["Protein"], modelData["RNA"], targetData["RNA"])
-    target_pairs = get_pairs(target_HB2, targetData["RNA"], None)
-    model_pairs = get_pairs(model_HB2, modelData["RNA"], model_mapping)
+    target_pairs = get_pairs(target_HB2, targetData["RNA"], targetData["Protein"], None)
+    model_pairs = get_pairs(model_HB2, modelData["RNA"], modelData["Protein"],  model_mapping)
     if (len(model_pairs) == 0):
         pass
     elif (len(target_pairs) == 0):
@@ -666,6 +677,8 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
             os.remove(name2)
             name2 = name2[0:len(name2) - 4] + "_tmp_m" + name2[len(name2) - 4:]
             model = open(name2, "r")
+            remove_om(name1)
+            remove_om(name2)
 
             if (not target_done): targetData = analyze(name1)
             modelData = analyze(name2)
@@ -691,8 +704,10 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
                                                                                                                   name) - 4]]); modelData = analyze(
                         name2)
                 else:
-                    target, name1 = auto_renum(targetData, target_done, name1, target)
-                    model, name2 = auto_renum(modelData, False, name2, model)
+                    auto_renum(targetData, target_done, name1, target)
+                    auto_renum(modelData, False, name2, model)
+                    targetData = analyze(name1)
+                    modelData = analyze(name2)
 
             if (not target_done): target_done = True
 
