@@ -635,18 +635,12 @@ def get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2, mo
     model_mapping = get_mapping(False, modelData["Protein"], targetData["Protein"], modelData["RNA"], targetData["RNA"])
     target_pairs = get_pairs(target_HB2, targetData["RNA"], targetData["Protein"], None)
     model_pairs = get_pairs(model_HB2, modelData["RNA"], modelData["Protein"],  model_mapping)
-    print(target_pairs)
-    print(model_pairs)
-    print(targetData)
-    print(modelData)
-    print(model_mapping)
     if (len(model_pairs) == 0):
         pass
     elif (len(target_pairs) == 0):
         pass
     else:
         inf = get_inf(target_pairs, model_pairs)
-        print(inf)
         if (inf > max_inf):
             max_inf = inf
     return max_inf
