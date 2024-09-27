@@ -384,11 +384,12 @@ def renumber_residues(filename, output_file, edit_command):
             for i, line in enumerate(lines):
                 if len(line) >= 32:
                     if line[20:23].strip() == og_chain_id:
-                        num_str = line[23:32].strip()
+                        num_str = line[23:31].strip()
                         match = re.match(r'^(-?[0-9]+)([a-zA-Z]*)$', num_str)
                         if match:
                             num = match.group(1).strip()
                             letters = match.group(2).strip()
+                        else: continue
                         try:
                             num = int(num)
                         except ValueError:
@@ -452,11 +453,12 @@ def find_fragments(filename, chain):
         for line in file:
             line_tmp = " ".join(line.split())
             if (line_tmp.split()[0] == "ATOM" and line_tmp.split()[4] == chain):
+                number = re.search(r'\d+', line_tmp.split()[5]).group()
                 if (len(numbers) == 0):
-                    i = line_tmp.split()[5]
-                    numbers.append(int(line_tmp.split()[5]))
-                if (line_tmp.split()[5] != i): numbers.append(int(line_tmp.split()[5]))
-                i = line_tmp.split()[5]
+                    i = number
+                    numbers.append(int(number))
+                if (number != i): numbers.append(int(number))
+                i = number
         if (len(numbers) > 0): fragments = [[numbers[0]]]
         for i in range(1, len(numbers)):
             if (numbers[i] > numbers[i - 1] + 1):
@@ -549,13 +551,14 @@ def custom_renum(done, name, file, renum):
         renumber_residues(name, name[0:len(name) - 4] + "_cus" + name[len(name) - 4:], renum)
 
 
-def remove_om(file_path):
+def remove_om(file_path, rna_chains):
+    chains = rna_chains.split(",")
     with open(file_path, 'r') as file:
         lines = file.readlines()
     for i in range(len(lines)):
         if len(lines[i]) >= 19:
-            substring = lines[i][17:20]
-            if substring in ["OMU", "OMG", "OMC", "OMA"]:
+            substring = lines[i][17:19]
+            if lines[i][21] in chains and substring != "  " and lines[i][17:20] != "ATP":
                 lines[i] = lines[i][:17] + "  " + lines[i][19:]
     with open(file_path, 'w') as file:
         file.writelines(lines)
@@ -632,12 +635,18 @@ def get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2, mo
     model_mapping = get_mapping(False, modelData["Protein"], targetData["Protein"], modelData["RNA"], targetData["RNA"])
     target_pairs = get_pairs(target_HB2, targetData["RNA"], targetData["Protein"], None)
     model_pairs = get_pairs(model_HB2, modelData["RNA"], modelData["Protein"],  model_mapping)
+    print(target_pairs)
+    print(model_pairs)
+    print(targetData)
+    print(modelData)
+    print(model_mapping)
     if (len(model_pairs) == 0):
         pass
     elif (len(target_pairs) == 0):
         pass
     else:
         inf = get_inf(target_pairs, model_pairs)
+        print(inf)
         if (inf > max_inf):
             max_inf = inf
     return max_inf
@@ -677,8 +686,6 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
             os.remove(name2)
             name2 = name2[0:len(name2) - 4] + "_tmp_m" + name2[len(name2) - 4:]
             model = open(name2, "r")
-            remove_om(name1)
-            remove_om(name2)
 
             if (not target_done): targetData = analyze(name1)
             modelData = analyze(name2)
@@ -687,6 +694,8 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
                 name2 = single_chain_rename(name2, modelData, model)
                 model = open(name2, "r")
                 modelData = analyze(name2)
+            #remove_om(name1, targetData["RNA"])
+            #remove_om(name2, modelData["RNA"])
 
 
             if (delete):
