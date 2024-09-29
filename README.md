@@ -85,6 +85,8 @@ Alignement format example (filename|alignement;[next]):
 7qde#2|C:103-113>A:103-113;7qde#10|A:1-11>A:103-113
 ```
 
+Note, that if there are negative residue numbers to renumber, use "." insted of "-".
+
 No custom alignment introduced eliminates residue renumbering.
 
 Removal format example (filename|removal;[next]):
