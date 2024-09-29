@@ -356,9 +356,8 @@ def delete_residues(filename, edit_command):
 
 def renumber_residues(filename, output_file, edit_command):
     for chain_command in edit_command.split(","):
-
         original, renumber = chain_command.split('>')
-        if(original[2] != "-" and renumber[2] != "-"):
+        if(len(original.split(".")) == 1 and len(original.split(".")) == 1):
             og_chain_id = original[0]
             ren_chain_id = renumber[0]
             og_start, og_end = original.split('-')
@@ -381,6 +380,8 @@ def renumber_residues(filename, output_file, edit_command):
             file.seek(0)
             renum_index = ren_start
             last_num = og_start
+            last_letter = ""
+            surplus = 0
             for i, line in enumerate(lines):
                 if len(line) >= 32:
                     if line[20:23].strip() == og_chain_id:
@@ -394,16 +395,19 @@ def renumber_residues(filename, output_file, edit_command):
                             num = int(num)
                         except ValueError:
                             continue
-                        if og_start <= num <= og_end:
-                            if (last_num != num):
+                        if og_start <= num <= og_end + surplus:
+                            if (last_num != num or last_letter != letters):
                                 renum_index += 1
+                                if(last_letter != letters):
+                                    surplus += 1
                             spaces1 = str(((" ") * (4 - len(str(renum_index)))))
-                            spaces2 = (" ") * (6 - len(letters))
-                            new_line = line[:21] + ren_chain_id + spaces1 + str(renum_index) + letters + spaces2 + line[32:]
+                            spaces2 = (" ") * (5)
+                            new_line = line[:21] + ren_chain_id + spaces1 + str(renum_index) + spaces2 + line[31:]
                             last_num = num
+                            last_letter = letters
                             lines[i] = new_line
-            with open(filename, 'w') as file:
-                file.writelines(lines)
+    with open(filename, 'w') as file:
+        file.writelines(lines)
 
 
 
@@ -424,7 +428,7 @@ def add_protein_chain_identifier(input_file, output_file, rna_id):
 
     with open(input_file, "r") as infile, open(output_file, "w") as outfile:
         for line in infile:
-            if line.startswith("ATOM"):
+            if len(line) > 21:
                 id = line[21]
                 if id == " ":
                     line = line[:21] + identifier + line[22:]
@@ -435,11 +439,13 @@ def auto_renumber(filename, chains, output):
     command = []
     for chain in chains:
         i = 1
-        fragments = find_fragments(filename, chain)
+        fragments, negatives= find_fragments(filename, chain)
         chain_mapping = []
+        if negatives: sign = "."
+        else: sign = "-"
         for fragment in fragments:
-            fragment_mapping = chain + ":" + str(fragment[0]) + "-" + str(fragment[1]) + ">" + chain + ":" + str(
-                i) + "-" + str(fragment[1] - fragment[0] + i)
+            fragment_mapping = chain + ":" + str(fragment[0]) + sign + str(fragment[1]) + ">" + chain + ":" + str(
+                i) + sign + str(fragment[1] - fragment[0] + i)
             chain_mapping.append(fragment_mapping)
             i = fragment[1] - fragment[0] + i + 1
         command.append(",".join(chain_mapping))
@@ -449,11 +455,12 @@ def auto_renumber(filename, chains, output):
 
 def find_fragments(filename, chain):
     numbers = []
+    negatives_found = False
     with open(filename) as file:
         for line in file:
-            line_tmp = " ".join(line.split())
-            if (line_tmp.split()[0] == "ATOM" and line_tmp.split()[4] == chain):
-                number = re.search(r'\d+', line_tmp.split()[5]).group()
+            if (len(line) > 40 and line[21] == chain):
+                number = re.search(r'-?\d+', line[22:30].strip()).group()
+                if(number.startswith("-")): negatives_found = True
                 if (len(numbers) == 0):
                     i = number
                     numbers.append(int(number))
@@ -465,7 +472,7 @@ def find_fragments(filename, chain):
                 fragments[len(fragments) - 1].append(numbers[i - 1])
                 fragments.append([numbers[i]])
         fragments[len(fragments) - 1].append(numbers[len(numbers) - 1])
-        return fragments
+        return fragments, negatives_found
 
 
 def create_combinations(list1, list2):
@@ -552,17 +559,76 @@ def custom_renum(done, name, file, renum):
 
 
 def remove_om(file_path, rna_chains):
+    modified_letters_3to1 = {'A23': 'A', 'A2L': 'A', 'A2M': 'A', 'A39': 'A',
+                             'A3P': 'A', 'A44': 'A', 'A5O': 'A', 'A6A': 'A', 'A7E': 'A', 'A9Z': 'A',
+                             'ADI': 'A', 'ADP': 'A', 'AET': 'A', 'AMD': 'A', 'AMO': 'A', 'AP7': 'A',
+                             'AVC': 'A', 'MA6': 'A', 'MAD': 'A', 'MGQ': 'A', 'MIA': 'A', 'MTU': 'A',
+                             'M7A': 'A', '26A': 'A', '2MA': 'A', '6IA': 'A', '6MA': 'A', '6MC': 'A',
+                             '6MP': 'A', '6MT': 'A', '6MZ': 'A', '6NW': 'A', 'F3N': 'A', 'N79': 'A',
+                             'RIA': 'A', 'V3L': 'A', 'ZAD': 'A', '31H': 'A', '31M': 'A', '7AT': 'A',
+                             'O2Z': 'A', 'SRA': 'A', '00A': 'A', '45A': 'A', '8AN': 'A', 'LCA': 'A',
+                             'P5P': 'A', 'PPU': 'A', 'PR5': 'A', 'PU': 'A', 'T6A': 'A', 'TBN': 'A',
+                             'TXD': 'A', 'TXP': 'A', '12A': 'A', '1MA': 'A', '5FA': 'A', 'A6G': 'G',
+                             'E6G': 'G', 'E7G': 'G', 'EQ4': 'G', 'IG': 'G', 'IMP': 'G', 'M2G': 'G',
+                             'MGT': 'G', 'MGV': 'G', 'MHG': 'G', 'QUO': 'G', 'YG': 'G', 'YYG': 'G',
+                             '23G': 'G', '2EG': 'G', '2MG': 'G', '2SG': 'G', 'B8K': 'G', 'B8W': 'G',
+                             'B9B': 'G', 'BGH': 'G', 'N6G': 'G', 'RFJ': 'G', 'ZGU': 'G', '7MG': 'G',
+                             'CG1': 'G', 'G1G': 'G', 'G25': 'G', 'G2L': 'G', 'G46': 'G', 'G48': 'G',
+                             'G7M': 'G', 'GAO': 'G', 'GDO': 'G', 'GDP': 'G', 'GH3': 'G', 'GNG': 'G',
+                             'GOM': 'G', 'GRB': 'G', 'GTP': 'G', 'KAG': 'G', 'KAK': 'G', 'O2G': 'G',
+                             'OMG': 'G', '8AA': 'G', '8OS': 'G', 'LG': 'G', 'PGP': 'G', 'P7G': 'G',
+                             'TPG': 'G', 'TG': 'G', 'XTS': 'G', '102': 'G', '18M': 'G', '1MG': 'G',
+                             'A5M': 'C', 'A6C': 'C', 'E3C': 'C', 'IC': 'C', 'M4C': 'C', 'M5M': 'C',
+                             '6OO': 'C', 'B8Q': 'C', 'B8T': 'C', 'B9H': 'C', 'JMH': 'C', 'N5M': 'C',
+                             'RPC': 'C', 'RSP': 'C', 'RSQ': 'C', 'ZBC': 'C', 'ZCY': 'C', '73W': 'C',
+                             'C25': 'C', 'C2L': 'C', 'C31': 'C', 'C43': 'C', 'C5L': 'C', 'CBV': 'C',
+                             'CCC': 'C', 'CH': 'C', 'CSF': 'C', 'OMC': 'C', 'S4C': 'C', '4OC': 'C',
+                             'LC': 'C', 'LHH': 'C', 'LV2': 'C', 'PMT': 'C', 'TC': 'C', '10C': 'C',
+                             '1SC': 'C', '5HM': 'C', '5IC': 'C', '5MC': 'C', 'A6U': 'U', 'IU': 'U',
+                             'I4U': 'U', 'MEP': 'U', 'MNU': 'U', 'U25': 'U', 'U2L': 'U', 'U2P': 'U',
+                             'U31': 'U', 'U34': 'U', 'U36': 'U', 'U37': 'U', 'U8U': 'U', 'UAR': 'U',
+                             'UBB': 'U', 'UBD': 'U', 'UD5': 'U', 'UPV': 'U', 'UR3': 'U', 'URD': 'U',
+                             'US5': 'U', 'UZR': 'U', 'UMO': 'U', 'U23': 'U', '2AU': 'U', '2MU': 'U',
+                             '2OM': 'U', 'B8H': 'U', 'FHU': 'U', 'FNU': 'U', 'F2T': 'U', 'RUS': 'U',
+                             'ZBU': 'U', '3AU': 'U', '3ME': 'U', '3MU': 'U', '3TD': 'U', '70U': 'U',
+                             '75B': 'U', 'CNU': 'U', 'OMU': 'U', 'ONE': 'U', 'S4U': 'U', 'SSU': 'U',
+                             'SUR': 'U', '4SU': 'U', '85Y': 'U', 'DHU': 'U', 'H2U': 'U', 'LHU': 'U',
+                             'PSU': 'U', 'PYO': 'U', 'P4U': 'U', 'T31': 'U', '125': 'U', '126': 'U',
+                             '127': 'U', '1RN': 'U', '5BU': 'U', '5FU': 'U', '5MU': 'U', '9QV': 'U',
+                             '5GP': 'G', 'ATP': 'A'}
     chains = rna_chains.split(",")
+    invalid_lines = []
     with open(file_path, 'r') as file:
         lines = file.readlines()
     for i in range(len(lines)):
         if len(lines[i]) >= 19:
             substring = lines[i][17:19]
-            if lines[i][21] in chains and substring != "  " and lines[i][17:20] != "ATP":
-                lines[i] = lines[i][:17] + "  " + lines[i][19:]
+            if lines[i][21] in chains and substring != "  ":
+                if lines[i][17:20] in modified_letters_3to1.keys():
+                    lines[i] = lines[i][:17] + "  " + modified_letters_3to1[lines[i][17:20]] + lines[i][20:]
+                else:
+                    print("Unrecognized nucleotide in line " + str(i) + " in chain " + lines[i][21] + " in file " + file_path)
+                    invalid_lines.append(lines[i])
+    for line in invalid_lines: lines.remove(line)
     with open(file_path, 'w') as file:
         file.writelines(lines)
 
+
+def copy_to_script_dir(file_path):
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    file_name = os.path.basename(file_path)
+    dest_path = os.path.join(script_dir, file_name)
+    shutil.copy(file_path, dest_path)
+
+    print(f"File '{file_name}' copied to {script_dir}")
+
+
+def check_for_negative(data):
+    for id in data["RNA"].split(","):
+        if (data[id][1] < 0): return True
+    for id in data["Protein"].split(","):
+        if (data[id][1] < 0): return True
+    return False
 
 def auto_renum(data, done, name, file):
     to_renum = []
@@ -684,13 +750,26 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
             if (not target_done): targetData = analyze(name1)
             modelData = analyze(name2)
 
+            if(not target_done):
+                if check_for_negative(targetData) and not renumber:
+                    print("Negative residue numbers in target. Please renumber. You may use -r.")
+                    exit()
+            if check_for_negative(modelData) and not renumber:
+                print("Negative residue numbers in " + name + " Please renumber. You may use -r.")
+                exit()
+
             if (modelData["single_protein"] == True):
                 name2 = single_chain_rename(name2, modelData, model)
                 model = open(name2, "r")
                 modelData = analyze(name2)
-            #remove_om(name1, targetData["RNA"])
-            #remove_om(name2, modelData["RNA"])
 
+            if (not target_done and targetData["single_protein"] == True):
+                name1 = single_chain_rename(name1, targetData, target)
+                target = open(name1, "r")
+                targetData = analyze(name1)
+
+            remove_om(name1, targetData["RNA"])
+            remove_om(name2, modelData["RNA"])
 
             if (delete):
                 if (target_delete != ""): custom_delete(target_done, name1, target_delete); targetData = analyze(name1)
@@ -766,7 +845,6 @@ def main(argv):
     parser.add_argument("-d", "--custom_removal", type=str, help="Custom deleting", default=None)
 
     args = parser.parse_args()
-
     if not os.path.isfile(args.target_path):
         print(f"Error: Target path '{args.target_path}' does not exist or is not a file.")
         sys.exit(1)
