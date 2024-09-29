@@ -334,10 +334,16 @@ def rna_tools_delete(filename, edit_command):
 
 def delete_residues(filename, edit_command):
     for chain_command in edit_command.split(","):
-        chain = chain_command[0]
-        start, end = chain_command.split('-')
-        end = int(end)
-        start = int(start[2:])
+        if (len(chain_command.split(".")) == 1):
+            chain = chain_command[0]
+            start, end = chain_command.split('-')
+            end = int(end)
+            start = int(start[2:])
+        else:
+            chain = chain_command[0]
+            start, end = chain_command.split('.')
+            end = int(end)
+            start = int(start[2:])
         with open(filename, 'r') as file:
             lines = file.readlines()
 
@@ -401,8 +407,8 @@ def renumber_residues(filename, output_file, edit_command):
                                 if(last_letter != letters):
                                     surplus += 1
                             spaces1 = str(((" ") * (4 - len(str(renum_index)))))
-                            spaces2 = (" ") * (5)
-                            new_line = line[:21] + ren_chain_id + spaces1 + str(renum_index) + spaces2 + line[31:]
+                            spaces2 = (" ") * (4)
+                            new_line = line[:21] + ren_chain_id + spaces1 + str(renum_index) + spaces2 + line[30:]
                             last_num = num
                             last_letter = letters
                             lines[i] = new_line
@@ -607,8 +613,8 @@ def remove_om(file_path, rna_chains):
                 if lines[i][17:20] in modified_letters_3to1.keys():
                     lines[i] = lines[i][:17] + "  " + modified_letters_3to1[lines[i][17:20]] + lines[i][20:]
                 else:
-                    print("Unrecognized nucleotide in line " + str(i) + " in chain " + lines[i][21] + " in file " + file_path)
-                    invalid_lines.append(lines[i])
+                     print("Unrecognized nucleotide: " + substring + " in chain " + lines[i][21] + " in structure " + file_path.split("_")[0].split("/")[len(file_path.split("_")[0].split("/")) - 1] + " " + str(i))
+                     invalid_lines.append(lines[i])
     for line in invalid_lines: lines.remove(line)
     with open(file_path, 'w') as file:
         file.writelines(lines)
