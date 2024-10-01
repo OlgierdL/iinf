@@ -756,13 +756,6 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
             if (not target_done): targetData = analyze(name1)
             modelData = analyze(name2)
 
-            if(not target_done):
-                if check_for_negative(targetData) and not renumber:
-                    print("Negative residue numbers in target. Please renumber. You may use -r.")
-                    exit()
-            if check_for_negative(modelData) and not renumber:
-                print("Negative residue numbers in " + name + " Please renumber. You may use -r.")
-                exit()
 
             if (modelData["single_protein"] == True):
                 name2 = single_chain_rename(name2, modelData, model)
@@ -796,6 +789,14 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
                     auto_renum(modelData, False, name2, model)
                     targetData = analyze(name1)
                     modelData = analyze(name2)
+
+            if(not target_done):
+                if check_for_negative(targetData):
+                    print("Negative residue numbers in target. Please renumber. You may use -r.")
+                    exit()
+            if check_for_negative(modelData):
+                print("Negative residue numbers in " + name + " Please renumber. You may use -r.")
+                exit()
 
             if (not target_done): target_done = True
 
