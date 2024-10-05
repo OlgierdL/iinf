@@ -412,8 +412,9 @@ def renumber_residues(filename, output_file, edit_command):
                             last_num = num
                             last_letter = letters
                             lines[i] = new_line
-    with open(filename, 'w') as file:
-        file.writelines(lines)
+            file.seek(0)
+        with open(filename, 'w') as file:
+            file.writelines(lines)
 
 
 
