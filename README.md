@@ -75,6 +75,8 @@ Parameters:
 
 ```-r, --renumber_structures``` - renumber all chains in both target and model(s), so that residue numbering is consistant for comparison.
 
+```-o, --own_mapping``` - chain identifier mapping will not be generated based on order of chains in files.
+
 ```-c, --custom_alignement``` - use user own (custom) alignement format for renumbering. Example below.
 
 ```-d, --custom_removal``` - use user own removal template for deleting parts of chains. Example below.
