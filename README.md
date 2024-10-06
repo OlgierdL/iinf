@@ -77,7 +77,7 @@ Parameters:
 
 ```-o, --own_mapping``` - chain identifier mapping will not be generated based on order of chains in files.
 
-```-c, --custom_alignement``` - use user own (custom) alignement format for renumbering. Example below.
+```-c, --custom_alignement``` - use user own (custom) alignement format for renumbering. Can be used without -r. Example below.
 
 ```-d, --custom_removal``` - use user own removal template for deleting parts of chains. Example below.
 
@@ -115,14 +115,14 @@ A) To execute very simple case, run ```run_basic_test.sh```. Expected result for
 ```
 model,score
 7qde#10,0.712
-7qde#2,0.632
-7qde#3,0.516
-7qde#4,0.624
-7qde#5,0.485
-7qde#6,0.505
-7qde#7,0.562
 7qde#8,0.650
+7qde#2,0.632
+7qde#4,0.624
+7qde#7,0.562
+7qde#3,0.516
+7qde#6,0.505
 7qde#9,0.500
+7qde#5,0.485
 
 ```
 
@@ -134,7 +134,7 @@ model,score
 7qde#2,0.632
 ```
 
-B) To experiment with both custom alignment and custom residue deletion at once, run ```run_complex_custom_alignment_test.sh```. Expected result for '7qde_ca' subdirectory is presented below:
+C) To experiment with both custom alignment and custom residue deletion at once, run ```run_complex_custom_alignment_test.sh```. Expected result for '7qde_ca' subdirectory is presented below:
 
 ```
 model,score
@@ -289,4 +289,17 @@ model,0.667
 model,0.930
 3OVB
 model,0.878
+```
+
+E) To experiment with correcting a file to be compared, run ```run_custom_rna-protein_test.sh```. Expected result from the 'complex' directory is presented below:
+
+```
+model,score
+model,0.434
+```
+F) To experiment with negative numbering correction, run ```run_negative_renumbering_test.sh```. Expected result from the negative directory is presented below:
+
+```
+model,score
+model,0.886
 ```
