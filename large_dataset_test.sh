@@ -1,5 +1,4 @@
 #!/bin/bash
-> out_data.txt
 python3 compare.py --target_path "ITScorePR_Decoys/1C0A/target.pdb" --model_path "ITScorePR_Decoys/1C0A/model.pdb" -r
 python3 compare.py --target_path "ITScorePR_Decoys/1DFU/target.pdb" --model_path "ITScorePR_Decoys/1DFU/model.pdb" -d "target|C:110-110;model|N:68-68" -r
 python3 compare.py --target_path "ITScorePR_Decoys/1E8O/target.pdb" --model_path "ITScorePR_Decoys/1E8O/model.pdb" -r
