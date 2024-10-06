@@ -303,3 +303,11 @@ F) To experiment with negative numbering correction, run ```run_negative_renumbe
 model,score
 model,0.886
 ```
+
+G) To experiment with adjusting the score, run ```run_adjusted_score_test.sh```. Expected result from the 7qde_as is presented below:
+
+```
+model,score
+7qde#2,0.625
+7qde#5,0.500
+```
