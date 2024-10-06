@@ -169,7 +169,7 @@ def get_mapping(targetData, modelData, target, model):
 
 
 def run_hbplus(tmpdir, name1):
-    command = f'bash -i -c "find {tmpdir} -name \'*.pdb\' -exec hbplus \\{{\\}} \\;"'
+    command = f'bash -c "find {tmpdir} -name \'*.pdb\' -exec hbplus \\{{\\}} \\;"'
     subprocess.run(command, shell=True, cwd=tmpdir, stdout=subprocess.DEVNULL)
     name3 = name1[0:len(name1) - 3] + "hb2"
     target_HB2 = open(name3, "r")
