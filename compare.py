@@ -16,6 +16,7 @@ from pathlib import Path
 import csv
 from itertools import product
 import re
+import copy
 
 
 def clear(file):
@@ -361,9 +362,12 @@ def delete_residues(filename, edit_command):
                 file.write(line)
 
 def renumber_residues(filename, output_file, edit_command):
+    with open(filename, 'r') as file:
+        lines = file.readlines()
+    new_lines = copy.deepcopy(lines)
     for chain_command in edit_command.split(","):
         original, renumber = chain_command.split('>')
-        if(len(original.split(".")) == 1 and len(original.split(".")) == 1):
+        if(len(original.split(".")) == 1 and len(renumber.split(".")) == 1):
             og_chain_id = original[0]
             ren_chain_id = renumber[0]
             og_start, og_end = original.split('-')
@@ -381,18 +385,15 @@ def renumber_residues(filename, output_file, edit_command):
             ren_start = int(ren_start[2:])
 
         with open(filename, 'r') as file:
-            lines = file.readlines()
-        with open(filename, 'r') as file:
             file.seek(0)
             renum_index = ren_start
             last_num = og_start
             last_letter = ""
-            surplus = 0
             for i, line in enumerate(lines):
                 if len(line) >= 32:
                     if line[20:23].strip() == og_chain_id:
                         num_str = line[23:31].strip()
-                        match = re.match(r'^(-?[0-9]+)([a-zA-Z]*)$', num_str)
+                        match = re.match(r'^(-?[0-9]+)([A-Z]*)$', num_str)
                         if match:
                             num = match.group(1).strip()
                             letters = match.group(2).strip()
@@ -401,21 +402,17 @@ def renumber_residues(filename, output_file, edit_command):
                             num = int(num)
                         except ValueError:
                             continue
-                        if og_start <= num <= og_end + surplus:
+                        if og_start <= num <= og_end:
                             if (last_num != num or last_letter != letters):
                                 renum_index += 1
-                                if(last_letter != letters):
-                                    surplus += 1
                             spaces1 = str(((" ") * (4 - len(str(renum_index)))))
                             spaces2 = (" ") * (4)
                             new_line = line[:21] + ren_chain_id + spaces1 + str(renum_index) + spaces2 + line[30:]
                             last_num = num
                             last_letter = letters
-                            lines[i] = new_line
-            file.seek(0)
-        with open(filename, 'w') as file:
-            file.writelines(lines)
-
+                            new_lines[i] = new_line
+    with open(filename, 'w') as file:
+        file.writelines(new_lines)
 
 
 def find_next_identifier(identifiers):
@@ -446,39 +443,74 @@ def auto_renumber(filename, chains, output):
     command = []
     for chain in chains:
         i = 1
-        fragments, negatives= find_fragments(filename, chain)
+        fragments, negatives = find_fragments(filename, chain)
         chain_mapping = []
         if negatives: sign = "."
         else: sign = "-"
         for fragment in fragments:
-            fragment_mapping = chain + ":" + str(fragment[0]) + sign + str(fragment[1]) + ">" + chain + ":" + str(
-                i) + sign + str(fragment[1] - fragment[0] + i)
-            chain_mapping.append(fragment_mapping)
-            i = fragment[1] - fragment[0] + i + 1
+            if(fragment[2] == 0):
+                fragment_mapping = chain + ":" + str(fragment[0]) + sign + str(fragment[1]) + ">" + chain + ":" + str(
+                    i) + sign + str(fragment[1] - fragment[0] + i)
+                chain_mapping.append(fragment_mapping)
+                i = fragment[1] - fragment[0] + i + 1
+            else:
+                fragment_mapping = chain + ":" + str(fragment[0]) + sign + str(fragment[1]) + ">" + chain + ":" + str(
+                    i) + sign + str(fragment[1] - fragment[0] + i + fragment[2])
+                chain_mapping.append(fragment_mapping)
+                i = fragment[1] - fragment[0] + i + 1 + fragment[2]
         command.append(",".join(chain_mapping))
     edit_command = ",".join(command)
     renumber_residues(filename, output, edit_command)
 
 
+def print_alignement(model_data, target_data):
+    target = "target: "
+    for chain in target_data["Protein"].split(","):
+        target = target + (chain + ":" + str(target_data[chain][1]) + "-" + str(target_data[chain][2]) + ";")
+    for chain in target_data["RNA"].split(","):
+        target = target + (chain + ":" + str(target_data[chain][1]) + "-" + str(target_data[chain][2]) + ";")
+    print(target)
+    model = "model: "
+    for chain in model_data["Protein"].split(","):
+        model = model + (chain + ":" + str(model_data[chain][1]) + "-" + str(model_data[chain][2]) + ";")
+    for chain in model_data["RNA"].split(","):
+        model = model + (chain + ":" + str(model_data[chain][1]) + "-" + str(model_data[chain][2]) + ";")
+    print(model)
+
 def find_fragments(filename, chain):
     numbers = []
+    surplus = 0
     negatives_found = False
     with open(filename) as file:
+        last_letter = ""
         for line in file:
             if (len(line) > 40 and line[21] == chain):
-                number = re.search(r'-?\d+', line[22:30].strip()).group()
+                match = re.match(r'^(-?[0-9]+)([A-Z]*)$', line[22:30].strip())
+                if match:
+                    number = match.group(1).strip()
+                    letter = match.group(2).strip()
                 if(number.startswith("-")): negatives_found = True
                 if (len(numbers) == 0):
                     i = number
                     numbers.append(int(number))
                 if (number != i): numbers.append(int(number))
+                if(letter != last_letter and number == i):
+                    if(letter != ""): numbers.append(int(number))
+                last_letter = letter
                 i = number
+
         if (len(numbers) > 0): fragments = [[numbers[0]]]
         for i in range(1, len(numbers)):
+            if(numbers[i] == numbers[i - 1]):
+                surplus += 1
             if (numbers[i] > numbers[i - 1] + 1):
                 fragments[len(fragments) - 1].append(numbers[i - 1])
+                fragments[len(fragments) - 1].append(surplus)
                 fragments.append([numbers[i]])
+                surplus = 0
+
         fragments[len(fragments) - 1].append(numbers[len(numbers) - 1])
+        fragments[len(fragments) - 1].append(surplus)
         return fragments, negatives_found
 
 
@@ -701,11 +733,12 @@ def get_mapping(is_target, model_chains_protein, target_chains_protein, model_ch
     return None
 
 
-def get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2, modelData, targetData):
+def get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2, modelData, targetData, user_mapping):
     max_inf = 0
     model_chains = modelData["RNA"] + "," + modelData["Protein"]
     target_chains = targetData["RNA"] + "," + targetData["Protein"]
-    model_mapping = get_mapping(False, modelData["Protein"], targetData["Protein"], modelData["RNA"], targetData["RNA"])
+    if(not user_mapping): model_mapping = get_mapping(False, modelData["Protein"], targetData["Protein"], modelData["RNA"], targetData["RNA"])
+    else: model_mapping = None
     target_pairs = get_pairs(target_HB2, targetData["RNA"], targetData["Protein"], None)
     model_pairs = get_pairs(model_HB2, modelData["RNA"], modelData["Protein"],  model_mapping)
     if (len(model_pairs) == 0):
@@ -731,9 +764,10 @@ def shorten_for_output(input_string):
 
 
 def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, model_renum, delete, target_delete,
-            model_delete):
+            model_delete, independent_mapping):
     infs = []
     target_done = False
+    path = name1[:len(name1)-10]
 
     with tempfile.TemporaryDirectory() as tmpdir:
         name1_copied = shutil.copy(name1, tmpdir)
@@ -778,13 +812,12 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
 
             if (renumber):
                 if (custom_alignement):
-                    if (target_renum != ""): custom_renum(target_done, name1, target,
-                                                                          target_renum); targetData = analyze(name1)
-                    if (name[0:len(name) - 4] in model_renum.keys()): custom_renum(False, name2, model,
-                                                                                                  model_renum[name[
-                                                                                                              0:len(
-                                                                                                                  name) - 4]]); modelData = analyze(
-                        name2)
+                    if (target_renum != ""):
+                        custom_renum(target_done, name1, target,target_renum)
+                        targetData = analyze(name1)
+                    if (name[0:len(name) - 4] in model_renum.keys()):
+                        custom_renum(False, name2, model,model_renum[name[0:len(name) - 4]])
+                        modelData = analyze(name2)
                 else:
                     auto_renum(targetData, target_done, name1, target)
                     auto_renum(modelData, False, name2, model)
@@ -812,7 +845,7 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
 
             target_mappings = create_combinations(targetData["Protein"].split(","), modelData["Protein"].split(","))
 
-            inf = get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2, modelData, targetData)
+            inf = get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2, modelData, targetData, independent_mapping)
 
             model_HB2.close()
 
@@ -848,11 +881,15 @@ def main(argv):
 
     parser.add_argument("-a", "--adjust_inf", action="store_true", help="Adjust inf")
     parser.add_argument("-r", "--renumber_structures", action="store_true", help="Renumber chains")
+    parser.add_argument("-o", "--own_mapping", action="store_true", help="Mapping independent from order in file")
 
     parser.add_argument("-c", "--custom_alignement", type=str, help="Custom renumbering", default=None)
     parser.add_argument("-d", "--custom_removal", type=str, help="Custom deleting", default=None)
 
     args = parser.parse_args()
+
+    renumber = args.renumber_structures
+
     if not os.path.isfile(args.target_path):
         print(f"Error: Target path '{args.target_path}' does not exist or is not a file.")
         sys.exit(1)
@@ -874,6 +911,7 @@ def main(argv):
     custom_model_renum = {}
 
     if (not args.custom_alignement is None):
+        renumber = True
         custom_renumbering = True
         custom_renums = args.custom_alignement.split(";")
         for renum in custom_renums:
@@ -896,8 +934,8 @@ def main(argv):
             if (name == os.path.splitext(os.path.basename(args.target_path))[0]): custom_target_delete = delete
 
     infs = compare(args.target_path, files_to_compare, custom_renumbering, args.adjust_inf,
-                   args.renumber_structures, custom_target_renum, custom_model_renum, custom_delete,
-                   custom_target_delete, custom_model_delete)
+                   renumber, custom_target_renum, custom_model_renum, custom_delete,
+                   custom_target_delete, custom_model_delete, args.own_mapping)
     target_filename_without_ext = os.path.splitext(os.path.basename(args.target_path))[0]
     sorted_infs = [infs[0]] + sorted(infs[1:], key=lambda x: x[1], reverse=True)
     save_csv(os.path.join(os.path.dirname(args.target_path), '{}_ranking.csv'.format(target_filename_without_ext)),
