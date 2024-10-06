@@ -1,4 +1,5 @@
 #!/bin/bash
+find . -name "*.csv" -exec rm {} \;
 python3 compare.py --target_path "examples/ITScorePR_Decoys/1C0A/target.pdb" --model_path "examples/ITScorePR_Decoys/1C0A/model.pdb" -r
 python3 compare.py --target_path "examples/ITScorePR_Decoys/1DFU/target.pdb" --model_path "examples/ITScorePR_Decoys/1DFU/model.pdb" -d "target|C:110-110;model|N:68-68" -r
 python3 compare.py --target_path "examples/ITScorePR_Decoys/1E8O/target.pdb" --model_path "examples/ITScorePR_Decoys/1E8O/model.pdb" -r
@@ -72,10 +73,12 @@ python3 compare.py --target_path "examples/ITScorePR_Decoys/3MOJ/target.pdb" --m
 python3 compare.py --target_path "examples/ITScorePR_Decoys/3OL9/target.pdb" --model_path "examples/ITScorePR_Decoys/3OL9/model.pdb"
 python3 compare.py --target_path "examples/ITScorePR_Decoys/3OVB/target.pdb" --model_path "examples/ITScorePR_Decoys/3OVB/model.pdb" -r
 base_folder="examples/ITScorePR_Decoys"
-output_file="combined.csv"
-> "$output_file"
-find "$base_folder" -name "*.csv" | while read csv_file; do
+output_file="examples/ITScorePR_Decoys/combined.csv"
+echo "model,I_INF" > "$output_file"
+find "$base_folder" -name "*.csv" ! -name "$(basename "$output_file")" | while read csv_file; do
     folder_name=$(basename "$(dirname "$csv_file")")
-    echo "$folder_name" >> "$output_file"
-    tail -n +2 "$csv_file" >> "$output_file"
+    tail -n +2 "$csv_file" | while read line; do
+        echo "$folder_name,$(echo "$line" | sed 's/^model,//')" >> "$output_file"
+    done
 done
+
