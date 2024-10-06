@@ -304,7 +304,7 @@ model,score
 model,0.886
 ```
 
-G) To experiment with adjusting the score, run ```run_adjusted_score_test.sh```. Expected result from the 7qde_as is presented below:
+G) To experiment with scaling the INF, run ```run_adjusted_score_test.sh```. Expected result from the 7qde_as is presented below:
 
 ```
 model,score
