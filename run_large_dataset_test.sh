@@ -71,3 +71,11 @@ python3 compare.py --target_path "examples/ITScorePR_Decoys/3LWR/target.pdb" --m
 python3 compare.py --target_path "examples/ITScorePR_Decoys/3MOJ/target.pdb" --model_path "examples/ITScorePR_Decoys/3MOJ/model.pdb"
 python3 compare.py --target_path "examples/ITScorePR_Decoys/3OL9/target.pdb" --model_path "examples/ITScorePR_Decoys/3OL9/model.pdb"
 python3 compare.py --target_path "examples/ITScorePR_Decoys/3OVB/target.pdb" --model_path "examples/ITScorePR_Decoys/3OVB/model.pdb" -r
+base_folder="examples/ITScorePR_Decoys"
+output_file="combined.csv"
+> "$output_file"
+find "$base_folder" -name "*.csv" | while read csv_file; do
+    folder_name=$(basename "$(dirname "$csv_file")")
+    echo "$folder_name" >> "$output_file"
+    tail -n +2 "$csv_file" >> "$output_file"
+done
