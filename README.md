@@ -2,12 +2,12 @@
 
 ## Features:
 
-The IINF tool is designed to evaluate *in silico* predictions of RNA-protein
+The I-INF tool is designed to evaluate *in silico* predictions of RNA-protein
 3D structures by quantifying hydrogen bonds at RNA-protein binding sites.
 It compares the predicted model of the RNA-protein assembly with a
 reference structure and computes the Intermolecular Interaction Network
 Fidelity (I-INF), a normalized similarity measure with values ranging from
-0 to 1. IINF relies on two external packages, rna-tools and HBPLUS, and
+0 to 1. I-INF relies on two external packages, rna-tools and HBPLUS, and
 operates through the following steps:
  * Preprocess the model(s) to ensure consistency with the reference structure (target),
  * Analyze both target and model(s), rename, renumber and delete parts of chains if necessary (using the rna-tools),
