@@ -22,7 +22,7 @@ The I-INF score (a range between 0.0 and 1.0 - the higher value the better) is t
 This is given by the formula:
 
 $$
-\text{inf} = \sqrt{\frac{tp}{tp + fp} \cdot \frac{tp}{tp + fn}}
+\text{i-inf} = \sqrt{\frac{tp}{tp + fp} \cdot \frac{tp}{tp + fn}}
 $$
 
 Where:
