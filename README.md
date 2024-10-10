@@ -131,7 +131,17 @@ model,score
 
 ```
 
-B) To experiment with custom alignment, run ```run_custom_alignment_test.sh```. Expected result for '7qde_ca' subdirectory is presented below:
+B) To execute another simple case for DNA:RNA hybrid, run ```run_basic_hybrid_test.sh```. Expected result for '1hg9' subdirectory is presented below:
+
+```
+model,score
+model,score
+1hg9#10,1.000
+1hg9#15,0.961
+
+```
+
+C) To experiment with custom alignment, run ```run_custom_alignment_test.sh```. Expected result for '7qde_ca' subdirectory is presented below:
 
 ```
 model,score
@@ -139,7 +149,7 @@ model,score
 7qde#2,0.632
 ```
 
-C) To experiment with both custom alignment and custom residue deletion at once, run ```run_complex_custom_alignment_test.sh```. Expected result for '7qde_ca' subdirectory is presented below:
+D) To experiment with both custom alignment and custom residue deletion at once, run ```run_complex_custom_alignment_test.sh```. Expected result for '7qde_ca' subdirectory is presented below:
 
 ```
 model,score
@@ -147,7 +157,7 @@ model,score
 7qde#2,0.730
 ```
 
-D) To run the code on a larger dataset, use ```run_large_dataset_test.sh```. Expected result, from the combined.csv file, is presented below:
+E) To run the code on a larger dataset, use ```run_large_dataset_test.sh```. Expected result, from the combined.csv file, is presented below:
 
 ```
 model,I_INF
@@ -225,20 +235,20 @@ model,I_INF
 3OVB,0.878
 ```
 
-E) To experiment with correcting a file to be compared, run ```run_custom_rna-protein_test.sh```. Expected result from the 'complex' directory is presented below:
+F) To experiment with correcting a file to be compared, run ```run_custom_rna-protein_test.sh```. Expected result from the 'complex' directory is presented below:
 
 ```
 model,score
 model,0.434
 ```
-F) To experiment with negative numbering correction, run ```run_negative_renumbering_test.sh```. Expected result from the negative directory is presented below:
+G) To experiment with negative numbering correction, run ```run_negative_renumbering_test.sh```. Expected result from the negative directory is presented below:
 
 ```
 model,score
 model,0.886
 ```
 
-G) To experiment with scaling the I-INF, run ```run_adjusted_score_test.sh```. Expected result from the 7qde_as is presented below:
+H) To experiment with scaling the I-INF, run ```run_adjusted_score_test.sh```. Expected result from the 7qde_as is presented below:
 
 ```
 model,score

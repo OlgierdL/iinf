@@ -663,10 +663,15 @@ def copy_to_script_dir(file_path):
 
 
 def check_for_negative(data):
-    for id in data["RNA"].split(","):
-        if (data[id][1] < 0): return True
-    for id in data["Protein"].split(","):
-        if (data[id][1] < 0): return True
+    if data["RNA"] != '':
+        for id in data["RNA"].split(","):
+            if (data[id][1] < 0): return True
+    if data["Protein"] != '':
+        for id in data["Protein"].split(","):
+            if (data[id][1] < 0): return True
+    if data["DNA"] != '':
+        for id in data["DNA"].split(","):
+            if (data[id][1] < 0): return True
     return False
 
 def auto_renum(data, done, name, file):
