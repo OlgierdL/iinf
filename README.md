@@ -135,7 +135,6 @@ B) To execute another simple case for DNA:RNA hybrid, run ```run_basic_hybrid_te
 
 ```
 model,score
-model,score
 1hg9#10,1.000
 1hg9#15,0.961
 
