@@ -115,7 +115,7 @@ Both tools should be added to PATH or otherwise accesible.
 
 ## Tests:
 
-A) To execute very simple case, run ```run_basic_test.sh```. Expected result for '7qde' subdirectory is presented below:
+A) To execute very simple RNAP case, run ```run_basic_test.sh```. Expected result for '7qde' subdirectory is presented below:
 
 ```
 model,score
@@ -128,7 +128,6 @@ model,score
 7qde#6,0.505
 7qde#9,0.500
 7qde#5,0.485
-
 ```
 
 B) To execute another simple case for DNA:RNA hybrid, run ```run_basic_hybrid_test.sh```. Expected result for '1hg9' subdirectory is presented below:
@@ -137,10 +136,33 @@ B) To execute another simple case for DNA:RNA hybrid, run ```run_basic_hybrid_te
 model,score
 1hg9#10,1.000
 1hg9#15,0.961
-
 ```
 
-C) To experiment with custom alignment, run ```run_custom_alignment_test.sh```. Expected result for '7qde_ca' subdirectory is presented below:
+C) To execute another simple case for protein-protein complex, run ```run_protein-protein_test.sh```. Expected result for '2lxc' subdirectory is presented below:
+
+```
+model,score
+2lxc#9,0.941
+2lxc#5,0.667
+```
+
+D) To execute another simple case for RNA-RNA complex, run ```run_rna-rna_test.sh```. Expected result for '2jyj' subdirectory is presented below:
+
+```
+model,score
+2jyj#8,1.000
+2jyj#2,0.968
+```
+
+E) To execute another simple case for DNA-DNA complex, run ```run_dna-dna_test.sh```. Expected result for '1lwa' subdirectory is presented below:
+
+```
+model,score
+1lwa#2,1.000
+1lwa#18,0.979
+```
+
+F) To experiment with custom alignment, run ```run_custom_alignment_test.sh```. Expected result for '7qde_ca' subdirectory is presented below:
 
 ```
 model,score
@@ -148,7 +170,7 @@ model,score
 7qde#2,0.632
 ```
 
-D) To experiment with both custom alignment and custom residue deletion at once, run ```run_complex_custom_alignment_test.sh```. Expected result for '7qde_ca' subdirectory is presented below:
+G) To experiment with both custom alignment and custom residue deletion at once, run ```run_complex_custom_alignment_test.sh```. Expected result for '7qde_ca' subdirectory is presented below:
 
 ```
 model,score
@@ -156,7 +178,7 @@ model,score
 7qde#2,0.730
 ```
 
-E) To run the code on a larger dataset, use ```run_large_dataset_test.sh```. Expected result, from the combined.csv file, is presented below:
+H) To run the code on a larger dataset, use ```run_large_dataset_test.sh```. Expected result, from the combined.csv file, is presented below:
 
 ```
 model,I_INF
@@ -234,20 +256,20 @@ model,I_INF
 3OVB,0.878
 ```
 
-F) To experiment with correcting a file to be compared, run ```run_custom_rna-protein_test.sh```. Expected result from the 'complex' directory is presented below:
+I) To experiment with correcting a file to be compared, run ```run_custom_rna-protein_test.sh```. Expected result from the 'complex' directory is presented below:
 
 ```
 model,score
 model,0.434
 ```
-G) To experiment with negative numbering correction, run ```run_negative_renumbering_test.sh```. Expected result from the negative directory is presented below:
+J) To experiment with negative numbering correction, run ```run_negative_renumbering_test.sh```. Expected result from the negative directory is presented below:
 
 ```
 model,score
 model,0.886
 ```
 
-H) To experiment with scaling the I-INF, run ```run_adjusted_score_test.sh```. Expected result from the 7qde_as is presented below:
+K) To experiment with scaling the I-INF, run ```run_adjusted_score_test.sh```. Expected result from the 7qde_as is presented below:
 
 ```
 model,score

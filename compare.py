@@ -218,13 +218,19 @@ def filter_pairs(file, rna_chains, protein_chains):
             name_d = donor[6:9].strip()
             name_a = acceptor[6:9].strip()
 
-            if (name_d[0] != "HOH" and name_a != "HOH") and \
-                    (len(rna_chains) == 0 or (len(rna_chains) > 0 and (
-                            rna_chains.find(chain_d) >= 0 or rna_chains.find(chain_a) >= 0))) and \
+            if ((len(rna_chains)>0) and (len(protein_chains)>0) and ((name_d[0] != "HOH" and name_a != "HOH") and \
+                    (len(rna_chains) == 0 or (len(rna_chains) > 0 and (rna_chains.find(chain_d) >= 0 or rna_chains.find(chain_a) >= 0))) and \
                     (name_d in rna_dict.keys() or name_a in rna_dict.keys()) and \
-                    not ((chain_d in protein_chains.split(",") and chain_a in protein_chains.split(",")) or (
-                            name_d in dna_dict.keys() and name_a in dna_dict.keys() > 0) or (
-                                 chain_d in rna_chains.split(",") and chain_a in rna_chains.split(","))):
+                    not ((chain_d in protein_chains.split(",") and chain_a in protein_chains.split(",")) or \
+                    (name_d in dna_dict.keys() and name_a in dna_dict.keys()) or \
+                    (chain_d in rna_chains.split(",") and chain_a in rna_chains.split(","))))) or \
+                ((len(rna_chains)>0) and (len(protein_chains)==0) and ((chain_d != chain_a) and \
+                    (chain_d in rna_chains.split(",") or chain_a in rna_chains.split(",")) and \
+                    not (name_d in dna_dict.keys() and name_a in dna_dict.keys()))) or \
+                ((len(rna_chains)==0) and (len(protein_chains)>0) and ((chain_d != chain_a) and \
+                    (chain_d in protein_chains.split(",") or chain_a in protein_chains.split(",")) and \
+                    not (name_d in dna_dict.keys() and name_a in dna_dict.keys()))) or \
+                ((len(rna_chains)==0) and (len(protein_chains)==0) and (chain_d != chain_a)):
                 don_id = getid(donor)
                 acc_id = getid(acceptor)
                 don_tmp1 = don_id[0:2]
@@ -677,16 +683,19 @@ def check_for_negative(data):
 def auto_renum(data, done, name, file):
     to_renum = []
     renumber = False
+    
+    
+    if (len(data["Protein"])>0):
+        for id in data["Protein"].split(","):
+            if (data[id][2] - data[id][1] + 1 != data[id][3] or data[id][1] != 1 and not done):
+                renumber = True
+                to_renum.append(data[id][0])
 
-    for id in data["Protein"].split(","):
-        if (data[id][2] - data[id][1] + 1 != data[id][3] or data[id][1] != 1 and not done):
-            renumber = True
-            to_renum.append(data[id][0])
-
-    for id in data["RNA"].split(","):
-        if (data[id][2] - data[id][1] + 1 != data[id][3] or data[id][1] != 1 and not done):
-            renumber = True
-            to_renum.append(data[id][0])
+    if (len(data["RNA"])>0):
+        for id in data["RNA"].split(","):
+            if (data[id][2] - data[id][1] + 1 != data[id][3] or data[id][1] != 1 and not done):
+                renumber = True
+                to_renum.append(data[id][0])
 
     if (renumber):
         auto_renumber(name, to_renum, name[0:len(name) - 4] + "_ren" + name[len(name) - 4:])
@@ -740,8 +749,15 @@ def get_mapping(is_target, model_chains_protein, target_chains_protein, model_ch
 
 def get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2, modelData, targetData, user_mapping):
     max_inf = 0
-    model_chains = modelData["RNA"] + "," + modelData["Protein"]
-    target_chains = targetData["RNA"] + "," + targetData["Protein"]
+    if (len(modelData["RNA"])>0) and (len(modelData["Protein"])==0):
+        model_chains = modelData["RNA"]
+        target_chains = targetData["RNA"]
+    elif (len(modelData["RNA"])==0) and (len(modelData["Protein"])>0):
+        model_chains = modelData["Protein"]
+        target_chains = targetData["Protein"]
+    else:
+        model_chains = modelData["RNA"] + "," + modelData["Protein"]
+        target_chains = targetData["RNA"] + "," + targetData["Protein"]
     if(not user_mapping): model_mapping = get_mapping(False, modelData["Protein"], targetData["Protein"], modelData["RNA"], targetData["RNA"])
     else: model_mapping = None
     target_pairs = get_pairs(target_HB2, targetData["RNA"], targetData["Protein"], None)
