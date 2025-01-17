@@ -6,6 +6,7 @@ import glob
 import platform
 from Bio.PDB.PDBParser import PDBParser
 from Bio.SVDSuperimposer import SVDSuperimposer
+from Bio.SeqUtils import seq1
 import numpy as np
 import shutil
 import sys
@@ -17,7 +18,7 @@ import csv
 from itertools import product
 import re
 import copy
-
+from find_all_matches import compute_all_matches
 
 def clear(file):
     output_file = file[0:len(file) - 4] + "_tmp_m" + file[len(file) - 4:]
@@ -56,7 +57,7 @@ def analyze(file):
     molecule_chains = {}
     for model in structure:
         distribution[model.id] = {}
-        molecule_chains[model.id] = {"RNA": [], "DNA": [], "Protein": []}
+        molecule_chains[model.id] = {"RNA": [], "DNA": [], "Protein": [], "All": []}
         for chain in model:
             distribution[model.id][chain.id] = {"RNA": 0, "DNA": 0, "Protein": 0}
             for residue in chain:
@@ -69,11 +70,13 @@ def analyze(file):
                     distribution[model.id][chain.id]["RNA"] = distribution[model.id][chain.id].pop("RNA") + 1
             molecule_type = max(distribution[model.id][chain.id], key=distribution[model.id][chain.id].get)
             molecule_chains[model.id][molecule_type].append(chain.id)
+            molecule_chains[model.id]['All'].append(chain.id)
     for model in structure:
         output["model_no"] = format(model.serial_num)
         output["DNA"] = format(",".join(molecule_chains[model.id]["DNA"]))
         output["RNA"] = format(",".join(molecule_chains[model.id]["RNA"]))
         output["Protein"] = format(",".join(molecule_chains[model.id]["Protein"]))
+        output["All"] = format(",".join(molecule_chains[model.id]["All"]))
     for model in structure:
         resnum_tot = 0
         for chain in model:
@@ -93,6 +96,15 @@ def analyze(file):
         output["single_protein"] = True
     else:
         output["single_protein"] = False
+    output["sequence"] = {}
+    for model in structure:
+        for chain in model:
+            if (chain.id in molecule_chains[model.id]["Protein"]):
+                output["sequence"][chain.id] = seq1(''.join(residue.resname for residue in chain))
+            elif (chain.id in molecule_chains[model.id]["RNA"]):
+                output["sequence"][chain.id] = ''.join({'A':'A','G':'G','C':'C','U':'U'}.get(residue.resname,'X') for residue in chain)
+            elif (chain.id in molecule_chains[model.id]["DNA"]):
+                output["sequence"][chain.id] = ''.join({'DA':'A','DG':'G','DC':'C','DT':'T'}.get(residue.resname,'X') for residue in chain)
     return output
 
 
@@ -555,6 +567,10 @@ def save_csv(result_file_path, data):
         writer.writerows(data)
 
 
+def save(result_file_path, data):
+    with open(result_file_path, 'w') as file:
+        file.write(data)
+
 def copy_to_tmp(tmpdir, names):
     names_copied = []
     for name in names:
@@ -783,12 +799,21 @@ def shorten_for_output(input_string):
 
     return part_until_tmp
 
+    
+def compute_inf(target_pairs, model_pairs):
+    if (len(model_pairs) == 0):
+        return 0.0
+    elif (len(target_pairs) == 0):
+        return 1.0
+    else:
+        return get_inf(target_pairs, model_pairs)
 
 def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, model_renum, delete, target_delete,
             model_delete, independent_mapping):
     infs = []
     target_done = False
     path = name1[:len(name1)-10]
+    chains_mapping = None
 
     with tempfile.TemporaryDirectory() as tmpdir:
         name1_copied = shutil.copy(name1, tmpdir)
@@ -811,7 +836,6 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
 
             if (not target_done): targetData = analyze(name1)
             modelData = analyze(name2)
-
 
             if (modelData["single_protein"] == True):
                 name2 = single_chain_rename(name2, modelData, model)
@@ -856,43 +880,104 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
             if (not target_done): target_done = True
 
         hb2_dict, target_HB2 = run_hbplus(tmpdir, name1)
-
-        for model in hb2_dict.keys():
-            model_HB2 = open(os.path.join(tmpdir, model), "r")
-
-            os.makedirs("tmp_chains", exist_ok=True)
-
-            chains_mapping_model = modelData["RNA"] + ":" + targetData["RNA"]
-
-            target_mappings = create_combinations(targetData["Protein"].split(","), modelData["Protein"].split(","))
-
-            inf = get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2, modelData, targetData, independent_mapping)
-
-            model_HB2.close()
-
-            if (adj_inf):
-                inf = inf * modelData["residues_no"] / targetData["residues_no"]
-                hb2_dict[model] = inf
+        
+        tchains = targetData['All'].split(',')
+        tcount = len(tchains)
+        mchains = modelData['All'].split(',')
+        mcount = len(mchains)
+        edges = []
+        symetrical_chains_found = False
+        for tidx, target_chain in enumerate(tchains):
+            lcount = 0
+            for midx, model_chain in enumerate(mchains):
+                if (targetData['sequence'][target_chain] == modelData['sequence'][model_chain]):
+                    edges.append([tidx, midx+tcount])
+                    lcount = lcount + 1
+                if lcount > 1:
+                    symetrical_chains_found = True
+        
+        if symetrical_chains_found:
+            
+            target_pairs = get_pairs(target_HB2, targetData["RNA"], targetData["Protein"], None)
+            
+            max_mapping_desc = {}
+            match_count = 1
+            
+            print('Iterating via all possible combinations of strands...')
+            for match in compute_all_matches(edges, tcount, mcount):
+                print('\n{}) Chains mapping:'.format(match_count))
+                sorted_match = sorted(match, key=lambda x: x[0])
+                current_mapping = ''
+                current_mapping_desc = 'target,model\n'
+                
+                for (ch1idx, ch2idx) in sorted_match:
+                    if len(current_mapping)>0:
+                        current_mapping = current_mapping + ','
+                    current_mapping = current_mapping + mchains[ch2idx-tcount] + ':' + tchains[ch1idx]
+                    current_mapping_desc = current_mapping_desc + tchains[ch1idx] + ',' + mchains[ch2idx-tcount] + '\n'
+                print(current_mapping_desc[:-1])
+                print('Results:\nmodel,I-INF')
+                
+                for model in hb2_dict.keys():
+                    model_HB2 = open(os.path.join(tmpdir, model), "r")
+                    model_pairs = get_pairs(model_HB2, modelData["RNA"], modelData["Protein"], current_mapping)
+                    current_inf = compute_inf(target_pairs, model_pairs)
+                    print('{},{}'.format(shorten_for_output(model),format(current_inf, ".3f")))
+                    
+                    if current_inf > hb2_dict[model]:
+                        hb2_dict[model] = current_inf
+                        max_mapping_desc[model] = current_mapping_desc
+                    elif current_inf == 0.0 and model not in max_mapping_desc:
+                        max_mapping_desc[model] = current_mapping_desc
+                match_count = match_count + 1
+            print('\nDone.')
+            
+            chains_mapping = "Model' best chains mapping:\n"
+            for model in hb2_dict.keys():
+                model_HB2.close()
                 model_name = shorten_for_output(model)
-                infs.append([model_name, format(hb2_dict[model], ".3f")])
-            else:
-                hb2_dict[model] = inf
+                if (adj_inf):
+                    infs.append([model_name, format(hb2_dict[model] * modelData["residues_no"] / targetData["residues_no"], ".3f")])
+                else:
+                    infs.append([model_name, format(hb2_dict[model], ".3f")])
+                chains_mapping = chains_mapping + model_name + '\n' + max_mapping_desc[model]
+        
+        else:
+            for model in hb2_dict.keys():
+                model_HB2 = open(os.path.join(tmpdir, model), "r")
+
+                os.makedirs("tmp_chains", exist_ok=True)
+
+                chains_mapping_model = modelData["RNA"] + ":" + targetData["RNA"]
+
+                target_mappings = create_combinations(targetData["Protein"].split(","), modelData["Protein"].split(","))
+
+                inf = get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2, modelData, targetData, independent_mapping)
+
+                model_HB2.close()
+
                 model_name = shorten_for_output(model)
-                infs.append([model_name, format(hb2_dict[model], ".3f")])
+                if (adj_inf):
+                    inf = inf * modelData["residues_no"] / targetData["residues_no"]
+                    hb2_dict[model] = inf
+                    infs.append([model_name, format(hb2_dict[model], ".3f")])
+                else:
+                    hb2_dict[model] = inf
+                    infs.append([model_name, format(hb2_dict[model], ".3f")])
 
-            tmp_files = glob.glob(os.path.join("tmp_chains", "*"))
-            for tmp_file in tmp_files:
-                pass
-                try:
-                    os.remove(tmp_file)
-                except Exception as e:
-                    print(f'Error deleting {tmp_file}: {e}')
+                tmp_files = glob.glob(os.path.join("tmp_chains", "*"))
+                for tmp_file in tmp_files:
+                    pass
+                    try:
+                        os.remove(tmp_file)
+                    except Exception as e:
+                        print(f'Error deleting {tmp_file}: {e}')
 
-            if not os.listdir("tmp_chains"):
-                os.rmdir("tmp_chains")
+                if not os.listdir("tmp_chains"):
+                    os.rmdir("tmp_chains")
     infs.sort()
     infs = [["model", "score"]] + infs
-    return infs
+    return infs, chains_mapping
 
 
 def main(argv):
@@ -954,14 +1039,16 @@ def main(argv):
                 custom_model_delete[name] = delete
             if (name == os.path.splitext(os.path.basename(args.target_path))[0]): custom_target_delete = delete
 
-    infs = compare(args.target_path, files_to_compare, custom_renumbering, args.adjust_inf,
+    infs, chains_mapping = compare(args.target_path, files_to_compare, custom_renumbering, args.adjust_inf,
                    renumber, custom_target_renum, custom_model_renum, custom_delete,
                    custom_target_delete, custom_model_delete, args.own_mapping)
     target_filename_without_ext = os.path.splitext(os.path.basename(args.target_path))[0]
     sorted_infs = [infs[0]] + sorted(infs[1:], key=lambda x: x[1], reverse=True)
     save_csv(os.path.join(os.path.dirname(args.target_path), '{}_ranking.csv'.format(target_filename_without_ext)),
              sorted_infs)
-
+    if (chains_mapping != None):
+        save(os.path.join(os.path.dirname(args.target_path), '{}_chains_mapping.txt'.format(target_filename_without_ext)),
+             chains_mapping)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

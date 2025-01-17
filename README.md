@@ -138,20 +138,100 @@ model,score
 1hg9#15,0.961
 ```
 
-C) To execute another simple case for protein-protein complex, run ```run_protein-protein_test.sh```. Expected result for '2lxc' subdirectory is presented below:
+C) To execute another simple case for protein-protein complex, run ```run_protein-protein_test.sh```. Expected results for '2lxc' subdirectory are presented below:
 
 ```
+#2lxc#1_ranking.csv:
 model,score
 2lxc#9,0.941
 2lxc#5,0.667
+
+#2lxc#1_chains_mapping.txt:
+Model' best chains mapping:
+2lxc#5
+target,model
+A,A
+B,B
+C,C
+2lxc#9
+target,model
+A,A
+B,B
+C,C 
 ```
 
-D) To execute another simple case for RNA-RNA complex, run ```run_rna-rna_test.sh```. Expected result for '2jyj' subdirectory is presented below:
+To find the best chain mapping between the particular model and the target we enumerate all perfect and maximum matches in the bipartite graph. In the graph, nodes are chains included in the particular model as well as the target. Each edge represents two strands from the model and the target, respectively having identical sequences. The enumeration of all possible chain mappings for the particular case is presented below:
 
 ```
+Iterating via all possible combinations of strands...
+
+1) Chains mapping:
+target,model
+A,A
+B,B
+C,C
+Results:
+model,I-INF
+2lxc#5,0.667
+2lxc#9,0.941
+
+2) Chains mapping:
+target,model
+A,A
+B,C
+C,B
+Results:
+model,I-INF
+2lxc#5,0.243
+2lxc#9,0.235
+
+Done.
+```
+
+D) To execute another simple case for RNA-RNA complex, run ```run_rna-rna_test.sh```. Expected results for '2jyj' subdirectory are presented below:
+
+```
+#2jyj#1_ranking.csv:
 model,score
 2jyj#8,1.000
 2jyj#2,0.968
+
+#2jyj#1_chains_mapping.txt:
+Model' best chains mapping:
+2jyj#8
+target,model
+A,A
+B,B
+2jyj#2
+target,model
+A,A
+B,B 
+```
+
+The enumeration of all possible chain mappings for the particular case is presented below:
+
+```
+Iterating via all possible combinations of strands...
+
+1) Chains mapping:
+target,model
+A,A
+B,B
+Results:
+model,I-INF
+2jyj#8,1.000
+2jyj#2,0.968
+
+2) Chains mapping:
+target,model
+A,B
+B,A
+Results:
+model,I-INF
+2jyj#8,0.000
+2jyj#2,0.000
+
+Done.
 ```
 
 E) To execute another simple case for DNA-DNA complex, run ```run_dna-dna_test.sh```. Expected result for '1lwa' subdirectory is presented below:
