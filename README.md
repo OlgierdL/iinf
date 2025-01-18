@@ -14,6 +14,9 @@ operates through the following steps:
  * Run HBLUS on all PDB files considered to identify hydrogen bonds,
  * Compare hydrogen bonds found in the model within the context of the reference structure to compute model-target interface similarity.
 
+Additionally, it computes the F1 value given by the formula:
+\text{i-inf} = \sqrt{\frac{tp}{tp + fp} \cdot \frac{tp}{tp + fn}}
+
 ## Output:
 
 The tool allows users to compute the I-INF (Intermolecular Interaction Network Fidelity) score between two or more PDB files.
@@ -22,7 +25,7 @@ The I-INF score (a range between 0.0 and 1.0 - the higher value the better) is t
 This is given by the formula:
 
 $$
-\text{i-inf} = \sqrt{\frac{tp}{tp + fp} \cdot \frac{tp}{tp + fn}}
+\text{i-inf} = \frac{2 * tp}{2 * tp + fp + fn}
 $$
 
 Where:
