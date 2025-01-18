@@ -25,13 +25,13 @@ The I-INF score (a range between 0.0 and 1.0 - the higher value the better) is t
 This is given by the formula:
 
 $$
-\text{i-inf} = \frac{2 * tp}{2 * tp + fp + fn}
+\text{i-inf} = \sqrt{\frac{tp}{tp + fp} \cdot \frac{tp}{tp + fn}}
 $$
 
 The F1 score (a range between 0.0 and 1.0 - the higher value the better) is a second measure implemented:
 
 $$
-\text{i-inf} = \sqrt{\frac{tp}{tp + fp} \cdot \frac{tp}{tp + fn}}
+\text{f1} = \frac{2 * tp}{2 * tp + fp + fn}
 $$
 
 Where:
