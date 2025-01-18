@@ -185,7 +185,7 @@ def run_hbplus(tmpdir, name1):
     subprocess.run(command, shell=True, cwd=tmpdir, stdout=subprocess.DEVNULL)
     name3 = name1[0:len(name1) - 3] + "hb2"
     target_HB2 = open(name3, "r")
-    hb2_dict = {f.name: 0.0 for f in Path(tmpdir).glob("*.hb2") if f.stem != Path(name3).stem}
+    hb2_dict = {f.name: [0.0, 0.0] for f in Path(tmpdir).glob("*.hb2") if f.stem != Path(name3).stem}
     return hb2_dict, target_HB2
 
 
@@ -300,7 +300,7 @@ def get_pairs(file, rna_chains, protein_chains, mapping):
     return replaced_pairs
 
 
-def get_inf(target, model):
+def get_inf_f1(target, model):
     target_dict = {}
     i = 0
     for pair in target:
@@ -329,8 +329,9 @@ def get_inf(target, model):
     ppv = tp / (tp + fp)
     tpr = tp / (tp + fn)
     inf = math.sqrt(ppv * tpr)
+    f1 = (2*tp)/(2*tp+fp+fn)
 
-    return inf
+    return inf, f1
 
 
 def convert_to_wsl_path(path):
@@ -763,8 +764,9 @@ def get_mapping(is_target, model_chains_protein, target_chains_protein, model_ch
     return None
 
 
-def get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2, modelData, targetData, user_mapping):
-    max_inf = 0
+def get_max_inf_f1(target_mappings, chains_mapping_model, target_HB2, model_HB2, modelData, targetData, user_mapping):
+    inf = 0
+    f1 = 0
     if (len(modelData["RNA"])>0) and (len(modelData["Protein"])==0):
         model_chains = modelData["RNA"]
         target_chains = targetData["RNA"]
@@ -783,10 +785,8 @@ def get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2, mo
     elif (len(target_pairs) == 0):
         pass
     else:
-        inf = get_inf(target_pairs, model_pairs)
-        if (inf > max_inf):
-            max_inf = inf
-    return max_inf
+        inf, f1 = get_inf_f1(target_pairs, model_pairs)
+    return inf, f1
 
 
 def shorten_for_output(input_string):
@@ -800,17 +800,17 @@ def shorten_for_output(input_string):
     return part_until_tmp
 
     
-def compute_inf(target_pairs, model_pairs):
+def compute_inf_f1(target_pairs, model_pairs):
     if (len(model_pairs) == 0):
         return 0.0
     elif (len(target_pairs) == 0):
         return 1.0
     else:
-        return get_inf(target_pairs, model_pairs)
+        return get_inf_f1(target_pairs, model_pairs)
 
 def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, model_renum, delete, target_delete,
             model_delete, independent_mapping):
-    infs = []
+    infs_f1s = []
     target_done = False
     path = name1[:len(name1)-10]
     chains_mapping = None
@@ -921,11 +921,11 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
                 for model in hb2_dict.keys():
                     model_HB2 = open(os.path.join(tmpdir, model), "r")
                     model_pairs = get_pairs(model_HB2, modelData["RNA"], modelData["Protein"], current_mapping)
-                    current_inf = compute_inf(target_pairs, model_pairs)
+                    current_inf, current_f1 = compute_inf_f1(target_pairs, model_pairs)
                     print('{},{}'.format(shorten_for_output(model),format(current_inf, ".3f")))
                     
-                    if current_inf > hb2_dict[model]:
-                        hb2_dict[model] = current_inf
+                    if current_inf > hb2_dict[model][0]:
+                        hb2_dict[model] = [current_inf, current_f1]
                         max_mapping_desc[model] = current_mapping_desc
                     elif current_inf == 0.0 and model not in max_mapping_desc:
                         max_mapping_desc[model] = current_mapping_desc
@@ -937,9 +937,9 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
                 model_HB2.close()
                 model_name = shorten_for_output(model)
                 if (adj_inf):
-                    infs.append([model_name, format(hb2_dict[model] * modelData["residues_no"] / targetData["residues_no"], ".3f")])
+                    infs_f1s.append([model_name, format(hb2_dict[model][0] * modelData["residues_no"] / targetData["residues_no"], ".3f"), format(hb2_dict[model][1] * modelData["residues_no"] / targetData["residues_no"], ".3f")])
                 else:
-                    infs.append([model_name, format(hb2_dict[model], ".3f")])
+                    infs_f1s.append([model_name, format(hb2_dict[model][0], ".3f"), format(hb2_dict[model][1], ".3f")])
                 chains_mapping = chains_mapping + model_name + '\n' + max_mapping_desc[model]
         
         else:
@@ -952,18 +952,19 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
 
                 target_mappings = create_combinations(targetData["Protein"].split(","), modelData["Protein"].split(","))
 
-                inf = get_max_inf(target_mappings, chains_mapping_model, target_HB2, model_HB2, modelData, targetData, independent_mapping)
+                inf, f1 = get_max_inf_f1(target_mappings, chains_mapping_model, target_HB2, model_HB2, modelData, targetData, independent_mapping)
 
                 model_HB2.close()
 
                 model_name = shorten_for_output(model)
                 if (adj_inf):
                     inf = inf * modelData["residues_no"] / targetData["residues_no"]
-                    hb2_dict[model] = inf
-                    infs.append([model_name, format(hb2_dict[model], ".3f")])
+                    f1 = f1 * modelData["residues_no"] / targetData["residues_no"]
+                    hb2_dict[model] = [inf, f1]
+                    infs_f1s.append([model_name, format(hb2_dict[model][0], ".3f"), format(hb2_dict[model][1], ".3f")])
                 else:
-                    hb2_dict[model] = inf
-                    infs.append([model_name, format(hb2_dict[model], ".3f")])
+                    hb2_dict[model] = [inf, f1]
+                    infs_f1s.append([model_name, format(hb2_dict[model][0], ".3f"), format(hb2_dict[model][1], ".3f")])
 
                 tmp_files = glob.glob(os.path.join("tmp_chains", "*"))
                 for tmp_file in tmp_files:
@@ -975,8 +976,8 @@ def compare(name1, names2, custom_alignement, adj_inf, renumber, target_renum, m
 
                 if not os.listdir("tmp_chains"):
                     os.rmdir("tmp_chains")
-    infs.sort()
-    infs = [["model", "score"]] + infs
+    infs_f1s.sort()
+    infs = [["model", "inf_score", "f1_score"]] + infs_f1s
     return infs, chains_mapping
 
 
@@ -1039,13 +1040,13 @@ def main(argv):
                 custom_model_delete[name] = delete
             if (name == os.path.splitext(os.path.basename(args.target_path))[0]): custom_target_delete = delete
 
-    infs, chains_mapping = compare(args.target_path, files_to_compare, custom_renumbering, args.adjust_inf,
+    infs_f1s, chains_mapping = compare(args.target_path, files_to_compare, custom_renumbering, args.adjust_inf,
                    renumber, custom_target_renum, custom_model_renum, custom_delete,
                    custom_target_delete, custom_model_delete, args.own_mapping)
     target_filename_without_ext = os.path.splitext(os.path.basename(args.target_path))[0]
-    sorted_infs = [infs[0]] + sorted(infs[1:], key=lambda x: x[1], reverse=True)
+    sorted_scores = [infs_f1s[0]] + sorted(infs_f1s[1:], key=lambda x: x[1], reverse=True)
     save_csv(os.path.join(os.path.dirname(args.target_path), '{}_ranking.csv'.format(target_filename_without_ext)),
-             sorted_infs)
+             sorted_scores)
     if (chains_mapping != None):
         save(os.path.join(os.path.dirname(args.target_path), '{}_chains_mapping.txt'.format(target_filename_without_ext)),
              chains_mapping)

@@ -74,7 +74,7 @@ python3 compare.py --target_path "examples/ITScorePR_Decoys/3OL9/target.pdb" --m
 python3 compare.py --target_path "examples/ITScorePR_Decoys/3OVB/target.pdb" --model_path "examples/ITScorePR_Decoys/3OVB/model.pdb" -r
 base_folder="examples/ITScorePR_Decoys"
 output_file="examples/ITScorePR_Decoys/combined.csv"
-echo "model,I_INF" > "$output_file"
+echo "model,I_INF,F1" > "$output_file"
 find "$base_folder" -name "*.csv" ! -name "$(basename "$output_file")" | while read csv_file; do
     folder_name=$(basename "$(dirname "$csv_file")")
     tail -n +2 "$csv_file" | while read line; do
