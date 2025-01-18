@@ -118,33 +118,33 @@ Both tools should be added to PATH or otherwise accesible.
 A) To execute very simple RNAP case, run ```run_basic_test.sh```. Expected result for '7qde' subdirectory is presented below:
 
 ```
-model,score
-7qde#10,0.712
-7qde#8,0.650
-7qde#2,0.632
-7qde#4,0.624
-7qde#7,0.562
-7qde#3,0.516
-7qde#6,0.505
-7qde#9,0.500
-7qde#5,0.485
+model,inf_score,f1_score
+7qde#10,0.712,0.692
+7qde#8,0.650,0.643
+7qde#2,0.632,0.615
+7qde#4,0.624,0.621
+7qde#7,0.562,0.562
+7qde#3,0.516,0.516
+7qde#6,0.505,0.500
+7qde#9,0.500,0.500
+7qde#5,0.485,0.483
 ```
 
 B) To execute another simple case for DNA:RNA hybrid, run ```run_basic_hybrid_test.sh```. Expected result for '1hg9' subdirectory is presented below:
 
 ```
-model,score
-1hg9#10,1.000
-1hg9#15,0.961
+model,inf_score,f1_score
+1hg9#10,1.000,1.000
+1hg9#15,0.961,0.960
 ```
 
 C) To execute another simple case for protein-protein complex, run ```run_protein-protein_test.sh```. Expected results for '2lxc' subdirectory are presented below:
 
 ```
 #2lxc#1_ranking.csv:
-model,score
-2lxc#9,0.941
-2lxc#5,0.667
+model,inf_score,f1_score
+2lxc#9,0.941,0.941
+2lxc#5,0.667,0.667
 
 #2lxc#1_chains_mapping.txt:
 Model' best chains mapping:
@@ -192,9 +192,9 @@ D) To execute another simple case for RNA-RNA complex, run ```run_rna-rna_test.s
 
 ```
 #2jyj#1_ranking.csv:
-model,score
-2jyj#8,1.000
-2jyj#2,0.968
+model,inf_score,f1_score
+2jyj#8,1.000,1.000
+2jyj#2,0.968,0.968
 
 #2jyj#1_chains_mapping.txt:
 Model' best chains mapping:
@@ -237,122 +237,122 @@ Done.
 E) To execute another simple case for DNA-DNA complex, run ```run_dna-dna_test.sh```. Expected result for '1lwa' subdirectory is presented below:
 
 ```
-model,score
-1lwa#2,1.000
-1lwa#18,0.979
+model,inf_score,f1_score
+1lwa#2,1.000,1.000
+1lwa#18,0.979,0.979
 ```
 
 F) To experiment with custom alignment, run ```run_custom_alignment_test.sh```. Expected result for '7qde_ca' subdirectory is presented below:
 
 ```
-model,score
-7qde#10,0.712
-7qde#2,0.632
+model,inf_score,f1_score
+7qde#10,0.712,0.692
+7qde#2,0.632,0.615
 ```
 
 G) To experiment with both custom alignment and custom residue deletion at once, run ```run_complex_custom_alignment_test.sh```. Expected result for '7qde_ca' subdirectory is presented below:
 
 ```
-model,score
-7qde#10,0.816
-7qde#2,0.730
+model,inf_score,f1_score
+7qde#10,0.816,0.800
+7qde#2,0.730,0.727
 ```
 
 H) To run the code on a larger dataset, use ```run_large_dataset_test.sh```. Expected result, from the combined.csv file, is presented below:
 
 ```
-model,I_INF
-1C0A,0.456
-1DFU,0.434
-1E8O,0.258
-1F7U,0.417
-1F7Y,0.706
-1FFY,0.582
-1G1X,0.704
-1GAX,0.655
-1H3E,0.000
-1H4S,0.690
-1HQ1,0.966
-1IL2,0.353
-1J1U,0.882
-1JBS,0.000
-1JID,0.340
-1K8W,0.242
-1KOG,0.514
-1LNG,0.533
-1MMS,0.308
-1N78,0.531
-1OOA,0.000
-1Q2R,0.478
-1QTQ,0.765
-1R3E,0.764
-1R9F,0.274
-1RC7,0.094
-1S03,0.492
-1SER,0.000
-1SJ3,0.719
-1T0K,0.000
-1U0B,0.000
-1UN6,0.000
-1YVP,0.806
-2AKE,0.641
-2ANR,1.000
-2AZ0,0.500
-2BH2,0.520
-2BTE,0.167
-2CSX,0.516
-2CZJ,0.105
-2DU3,0.236
-2FK6,0.000
-2FMT,0.169
-2GJW,0.612
-2HW8,0.261
-2IPY,0.070
-2NUG,0.406
-2QUX,0.788
-2R8S,0.106
-2RFK,0.441
-2UWM,0.245
-2V3C,0.000
-2VPL,0.250
-2XDB,0.886
-2ZKO,0.338
-2ZM5,0.785
-2ZNI,0.317
-2ZUE,0.936
-2ZZM,0.557
-3ADD,0.263
-3CIY,0.183
-3DD2,0.566
-3EPH,0.842
-3FOZ,0.850
-3FTF,0.316
-3HHZ,0.309
-3HL2,0.000
-3LRR,0.408
-3LWR,0.793
-3MOJ,0.667
-3OL9,0.930
-3OVB,0.878
+model,I_INF,F1
+1C0A,0.456,0.439
+1DFU,0.434,0.364
+1E8O,0.258,0.211
+1F7U,0.417,0.415
+1F7Y,0.706,0.706
+1FFY,0.582,0.582
+1G1X,0.704,0.700
+1GAX,0.655,0.652
+1H3E,0.000,0.000
+1H4S,0.690,0.667
+1HQ1,0.966,0.966
+1IL2,0.353,0.346
+1J1U,0.882,0.875
+1JBS,0.000,0.000
+1JID,0.340,0.316
+1K8W,0.242,0.240
+1KOG,0.514,0.480
+1LNG,0.533,0.531
+1MMS,0.308,0.294
+1N78,0.531,0.511
+1OOA,0.000,0.000
+1Q2R,0.478,0.471
+1QTQ,0.765,0.765
+1R3E,0.764,0.764
+1R9F,0.274,0.273
+1RC7,0.094,0.080
+1S03,0.492,0.471
+1SER,0.000,0.000
+1SJ3,0.719,0.710
+1T0K,0.000,0.000
+1U0B,0.000,0.000
+1UN6,0.000,0.000
+1YVP,0.806,0.800
+2AKE,0.641,0.640
+2ANR,1.000,1.000
+2AZ0,0.500,0.500
+2BH2,0.520,0.511
+2BTE,0.167,0.167
+2CSX,0.516,0.516
+2CZJ,0.105,0.105
+2DU3,0.236,0.222
+2FK6,0.000,0.000
+2FMT,0.169,0.148
+2GJW,0.612,0.600
+2HW8,0.261,0.256
+2IPY,0.070,0.068
+2NUG,0.406,0.370
+2QUX,0.788,0.788
+2R8S,0.106,0.105
+2RFK,0.441,0.438
+2UWM,0.245,0.240
+2V3C,0.000,0.000
+2VPL,0.250,0.231
+2XDB,0.886,0.880
+2ZKO,0.338,0.333
+2ZM5,0.785,0.781
+2ZNI,0.317,0.314
+2ZUE,0.936,0.936
+2ZZM,0.557,0.552
+3ADD,0.263,0.261
+3CIY,0.183,0.182
+3DD2,0.566,0.526
+3EPH,0.842,0.842
+3FOZ,0.850,0.844
+3FTF,0.316,0.308
+3HHZ,0.309,0.308
+3HL2,0.000,0.000
+3LRR,0.408,0.400
+3LWR,0.793,0.778
+3MOJ,0.667,0.615
+3OL9,0.930,0.930
+3OVB,0.878,0.878
 ```
 
 I) To experiment with correcting a file to be compared, run ```run_custom_rna-protein_test.sh```. Expected result from the 'complex' directory is presented below:
 
 ```
-model,score
-model,0.434
+model,inf_score,f1_score
+model,0.434,0.364
 ```
 J) To experiment with negative numbering correction, run ```run_negative_renumbering_test.sh```. Expected result from the negative directory is presented below:
 
 ```
-model,score
-model,0.886
+model,inf_score,f1_score
+model,0.886,0.880
 ```
 
 K) To experiment with scaling the I-INF, run ```run_adjusted_score_test.sh```. Expected result from the 7qde_as is presented below:
 
 ```
-model,score
-7qde#2,0.625
-7qde#5,0.500
+model,inf_score,f1_score
+7qde#2,0.625,0.609
+7qde#5,0.500,0.494
 ```
