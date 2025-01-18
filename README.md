@@ -14,8 +14,8 @@ operates through the following steps:
  * Run HBLUS on all PDB files considered to identify hydrogen bonds,
  * Compare hydrogen bonds found in the model within the context of the reference structure to compute model-target interface similarity.
 
-Additionally, it computes the F1 value given by the formula:
-\text{i-inf} = \sqrt{\frac{tp}{tp + fp} \cdot \frac{tp}{tp + fn}}
+Additionally, it computes a similar F1 value based on the data.
+
 
 ## Output:
 
@@ -26,6 +26,12 @@ This is given by the formula:
 
 $$
 \text{i-inf} = \frac{2 * tp}{2 * tp + fp + fn}
+$$
+
+The F1 score (a range between 0.0 and 1.0 - the higher value the better) is a second measure implemented:
+
+$$
+\text{i-inf} = \sqrt{\frac{tp}{tp + fp} \cdot \frac{tp}{tp + fn}}
 $$
 
 Where:
