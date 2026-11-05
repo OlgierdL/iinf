@@ -802,9 +802,9 @@ def shorten_for_output(input_string):
     
 def compute_inf_f1(target_pairs, model_pairs):
     if (len(model_pairs) == 0):
-        return 0.0
+        return 0.0, 0.0
     elif (len(target_pairs) == 0):
-        return 1.0
+        return 1.0, 1.0
     else:
         return get_inf_f1(target_pairs, model_pairs)
 
